@@ -1,61 +1,107 @@
 {
-open Lexing
-open Parser
+  (* Tokenizer according to definition at
+   * http://www.w3.org/TR/CSS2/syndata.html#tokenization *)
+  open Lexing
+  open Parser
 
-exception SyntaxError of string
+  exception SyntaxError of string
 
-let next_line lexbuf =
-  let pos = lexbuf.lex_curr_p in
-  lexbuf.lex_curr_p <- {
-    pos with pos_bol = lexbuf.lex_curr_pos;
-             pos_lnum = pos.pos_lnum + 1
-  }
+  let next_line lexbuf =
+    let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- {
+      pos with pos_bol = lexbuf.lex_curr_pos;
+              pos_lnum = pos.pos_lnum + 1
+    }
 }
 
+let h           = ['0'-'9''a'-'f']
+let wc          = '\r''\n' | [' ''\t''\r''\n''\012']
+let nonascii    = ['\160'-'\255']
+let s           = [' ''\t''\r''\n''\012']+
+let w           = s?
+let nl          = '\n' | '\r''\n' | '\r' | '\012'
+let unicode     = '\\' h(h(h(h(h(h)?)?)?)?)? wc?
+let escape      = unicode | '\\'[^'\r''\n''\012''0'-'9''a'-'f']
+let nmstart     = ['_''a'-'z'] | nonascii | escape
+let nmchar      = ['_''a'-'z''0'-'9''-'] | nonascii | escape
+let string1     = '"'([^'\n''\r''\012''"'] | '\\'nl | escape)*'"'
+let string2     = '\''([^'\n''\r''\012''\''] | '\\'nl | escape)*'\''
+let mystring    = string1 | string2
+let badstring1  = '"'([^'\n''\r''\012''"'] | '\\'nl | escape)*'\\'?
+let badstring2  = '\''([^'\n''\r''\012''\''] | '\\'nl | escape)*'\\'?
+let badstring   = badstring1 | badstring2
+let badcomment1 = '/''*'[^'*']*'*'+([^'/''*'][^'*']*'*'+)*
+let badcomment2 = '/''*'[^'*']*('*'+[^'/''*'][^'*']*)*
+let badcomment  = badcomment1 | badcomment2
+let baduri1     = "url("w(['!''#''$''%''&''*'-'['']'-'~'] | nonascii | escape)*w
+let baduri2     = "url("w mystring w
+let baduri3     = "url("w badstring
+let baduri      = baduri1 | baduri2 | baduri3
+let comment     = '/''*'[^'*']*'*'+([^'/''*'][^'*']*'*'+)'*''/'
+let ident       = '-'? nmstart nmchar*
+let name        = nmchar+
+let num         = ['0'-'9']+ | ['0'-'9']*'.'['0'-'9']+
+let url         = (['!''#''$''%''&''*''-''~'] | nonascii | escape)*
+
 rule token = parse
-  | '(' { LPAREN }
-  | ')' { RPAREN }
-  | '{' { LBRACE }
-  | '}' { RBRACE }
-  | ';' { SEMICOL }
-  | ',' { COMMA }
-  | ':' { COLON }
+  | s                   { S }
 
-  | "@media"     { MEDIA }
-  | "@import"    { IMPORT }
-  | "@charset"   { CHARSET }
-  | "@page"      { PAGE }
-  | "@font-face" { FONTFACE }
-  | "@namespace" { NAMESPACE }
+  | comment             (* ignore comments *)
+  | badcomment          (* unclosed comment at EOF *)
 
-  | "!important" { IMPORTANT }
-  | ['A'-'Z''a'-'z''0'-'9''_''-''#''.']+ as id { ID id }
-  | ['.''#'':']['A'-'Z''a'-'z''_''-']['A'-'Z''a'-'z''0'-'9''_''-''.''#'':']* as id { SELECTOR id }
+  | "<!--"              { CDO }
+  | "-->"               { CDC }
+  | "~="                { INCLUDES }
+  | "|="                { DASHMATCH }
 
-  | '\r' | '\n' | "\r\n" { next_line lexbuf; token lexbuf }
-  | [' ''\t']+           { token lexbuf }
-  | "/*"                 { comment lexbuf }
-  | '"'                  { str (Buffer.create 17) lexbuf }
-  | eof | '\000'         { EOF }
+  | mystring            { STRING }
+  | badstring           { BAD_STRING }
 
-  | _ as chr { raise (SyntaxError ("unexpected char: " ^ Char.escaped chr)) }
+  | ident as id         { IDENT id }
 
-(* Multi-line comments *)
-and comment = parse
-  | '\r' | '\n' | "\r\n"  { next_line lexbuf; comment lexbuf }
-  | "*/"                  { token lexbuf }
-  | _                     { comment lexbuf }
+  | '#' (name as name)  { HASH name }
 
-(* Strings *)
-and str buf = parse
-  | '"'              { STRING (Buffer.contents buf) }
-  | '\\''/'          { Buffer.add_char buf '/';    str buf lexbuf }
-  | '\\''\\'         { Buffer.add_char buf '\\';   str buf lexbuf }
-  | '\\''b'          { Buffer.add_char buf '\b';   str buf lexbuf }
-  | '\\''f'          { Buffer.add_char buf '\012'; str buf lexbuf }
-  | '\\''n'          { Buffer.add_char buf '\n';   str buf lexbuf }
-  | '\\''r'          { Buffer.add_char buf '\r';   str buf lexbuf }
-  | '\\''t'          { Buffer.add_char buf '\t';   str buf lexbuf }
-  | [^'"''\\']+ as s { Buffer.add_string buf s;    str buf lexbuf }
-  | eof              { raise (SyntaxError "unterminated string") }
+  | "@import"           { IMPORT_SYM }
+  | "@page"             { PAGE_SYM }
+  | "@media"            { MEDIA_SYM }
+  | "@charset"          { CHARSET_SYM }
+
+  | '!' (w | comment)* "important"  { IMPORTANT_SYM }
+
+  | (num as n) "em"     { EMS (int_of_string n) }
+  | (num as n) "ex"     { EXS (int_of_string n) }
+  | (num as n) "px"     { LENGTH (int_of_string n, "px") }
+  | (num as n) "cm"     { LENGTH (int_of_string n, "cm") }
+  | (num as n) "mm"     { LENGTH (int_of_string n, "mm") }
+  | (num as n) "in"     { LENGTH (int_of_string n, "in") }
+  | (num as n) "pt"     { LENGTH (int_of_string n, "pt") }
+  | (num as n) "pc"     { LENGTH (int_of_string n, "pc") }
+  | (num as n) "deg"    { ANGLE (int_of_string n, "deg") }
+  | (num as n) "rad"    { ANGLE (int_of_string n, "rad") }
+  | (num as n) "grad"   { ANGLE (int_of_string n, "grad") }
+  | (num as n) "ms"     { TIME (int_of_string n, "ms") }
+  | (num as n) "s"      { TIME (int_of_string n, "s") }
+  | (num as n) "hz"     { FREQ (int_of_string n, "hz") }
+  | (num as n) "khz"    { FREQ (int_of_string n, "khz") }
+  | (num as n) "%"      { PERCENTAGE (int_of_string n) }
+  | (num as n) (ident as dim)  { DIMENSION (int_of_string n, dim) }
+  | num as n            { NUMBER (int_of_string n) }
+
+  | "url(" w (mystring as uri) w ")"  { URI uri }
+  | "url(" w (url as uri) w ")"       { URI uri }
+  | baduri as uri                     { BAD_URI uri }
+
+  | (ident as fn) '('   { FUNCTION fn }
+
+  | '('                 { LPAREN }
+  | ')'                 { RPAREN }
+  | '{'                 { LBRACE }
+  | '}'                 { RBRACE }
+  | '['                 { LBRACK }
+  | ']'                 { RBRACK }
+  | ';'                 { SEMICOL }
+  | ':'                 { COLON }
+
+  (*
   | _ as c { raise (SyntaxError ("illegal string character: " ^ Char.escaped c)) }
+  *)

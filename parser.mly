@@ -6,10 +6,12 @@ let prop2str (name, value) = name ^ ":" ^ Stringify.value2str value
 %}
 
 (* Tokens *)
-%token LPAREN RPAREN LBRACE RBRACE SEMICOL COMMA COLON
-%token MEDIA IMPORT CHARSET PAGE FONTFACE NAMESPACE
-%token IMPORTANT EOF
-%token <string> ID STRING SELECTOR
+%token S CDO CDC INCLUDES DASHMATCH STRING BAD_STRING IMPORT_SYM PAGE_SYM
+%token MEDIA_SYM CHARSET_SYM IMPORTANT_SYM
+%token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON
+%token <int> EMS EXS PERCENTAGE NUMBER
+%token <int * string> LENGTH ANGLE TIME FREQ DIMENSION
+%token <string> IDENT HASH URI BAD_URI FUNCTION
 
 (* Start symbol *)
 %type <Types.decl list> stylesheet
@@ -18,68 +20,43 @@ let prop2str (name, value) = name ^ ":" ^ Stringify.value2str value
 %%
 
 (* Left-recursive list (use List.rev to obtain correctly ordered list) *)
+(*
 llist(x):
   |            { [] }
   | tl=llist(x) hd=x { hd :: tl }
-
-separated_llist(sep, x):
-  |                      { [] }
-  | tl=llist(x) sep hd=x { hd :: tl }
+*)
 
 stylesheet:
-  | decls=llist(decl) EOF
-  { List.rev decls }
+  | ( CDO | CDC | S | statement )*
 
-selector:
-  | id=ID                    { [id] }
-  | id=SELECTOR              { [id] }
-  | tl=selector hd=ID        { hd :: tl }
-  | tl=selector hd=SELECTOR  { hd :: tl }
+statement:
+  | ruleset
+  | at_rule
+
+at_rule:
+  | ATKEYWORD S* any* ( block | SEMICOL S* )
+
+block:
+  | LBRACE S* ( any | block | ATKEYWORD S* | SEMICOL S* )* RBRACE S*
+
+ruleset:
+  | selectors=any+ LBRACE S* declaration? ( SEMICOL S* declaration? )* RBRACE S*
+
+declaration:
+  | name=IDENT S* COLON S* value=value
+  { Property (name, value) }
 
 value:
-  | str=STRING                      { Str str }
-  | lit=ID                          { Lit lit }
-  | name=ID LPAREN arg=value RPAREN { Fn (name, arg) }
-  | IMPORTANT                       { Imp }
+  | ( any | block | ATKEYWORD S* )+
 
-prop:
-  | name=ID COLON v=value+
-  { (name, match v with [hd] -> hd | _ -> Lst v) }
+any:
+  | ( IDENT | NUMBER | PERCENTAGE | DIMENSION | STRING | DELIM | URI | HASH |
+  UNICODE-RANGE | INCLUDES | DASHMATCH | COLON | FUNCTION S* (any|unused)*
+  RPAREN | LPAREN S* (any|unused)* RPAREN | LBRACK S* (any|unused)* RBRACK) S*
 
-propline:
-  | p=prop SEMICOL
-  { p }
-
-props:
-  | LBRACE p=llist(propline) last=prop? RBRACE
-  { List.rev p @ (match last with None -> [] | Some p -> [p]) }
-
-group:
-  | s=separated_nonempty_list(COMMA, selector) p=props
-  { Group (List.rev s, p) }
-
-%inline media:
-  | m=ID
-  { m }
-  | LPAREN p=prop RPAREN
-  { "(" ^ prop2str p ^ ")" }
-
-%inline stringopt: f=STRING | f=ID { f }
-
-decl:
-  | g=group
-  { g }
-  | MEDIA queries=separated_nonempty_list(COMMA, media) LBRACE groups=llist(group) RBRACE
-  { Media (queries, List.rev groups) }
-  | IMPORT f=stringopt q=separated_list(COMMA, ID) SEMICOL
-  { Import (f, q) }
-  | CHARSET c=stringopt SEMICOL
-  { Charset c }
-  | PAGE query=ID? p=props
-  { Page (query, p) }
-  | FONTFACE p=props
-  { Fontface p }
-  | NAMESPACE prefix=ID? uri=STRING SEMICOL
-  { Namespace (prefix, uri) }
-
-%%
+unused:
+  | block
+  | ATKEYWORD S*
+  | SEMICOL S*
+  | CDO S*
+  | CDC S*
