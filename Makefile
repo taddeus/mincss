@@ -1,6 +1,5 @@
 RESULT := mincss
 BASENAMES := types stringify parser lexer util parse main
-
 OFILES := $(addsuffix .cmx,$(BASENAMES))
 
 OCAMLCFLAGS := -g

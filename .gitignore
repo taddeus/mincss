@@ -1,11 +1,9 @@
-._*/
 mincss
 *.cmo
 *.cmi
 *.cmx
 *.swp
 *.o
-types.ml
 lexer.ml
 lexer.mli
 parser.ml
