@@ -1,26 +1,34 @@
 RESULT := mincss
-SOURCES := types.ml types.mli stringify.ml lexer.mll parser.mly util.ml parse.ml \
-	main.ml
-PRE_TARGETS := types.ml types.cmi stringify.cmi
-LIBS := str
+BASENAMES := types stringify parser lexer util parse main
 
-# Set debugging flag to enable exception backtraces for OCAMLRUNPARAM=b
-OCAMLFLAGS := -g
+OFILES := $(addsuffix .cmx,$(BASENAMES))
 
-OCAMLYACC := menhir
-YFLAGS := --infer --explain --dump
+OCAMLCFLAGS := -g
+OCAMLLDFLAGS :=
+OCAMLLDLIBS := str.cmxa
 
-.PHONY: all myclean
+.PHONY: all clean
+.PRECIOUS: $(addprefix .cmi,$(BASENAMES))
 
-all: native-code
+all: $(RESULT)
 
-clean:: myclean
+%.ml: %.mll
+	ocamllex -o $@ $<
 
-# The Types module needs an implementation to stop ocamlc from complaining
-types.ml: types.mli
-	cp $< $@
+%.ml: %.mly
+	menhir --infer --explain $<
 
-myclean:
-	rm -f a.out types.ml parser.conflicts parser.automaton
+%.cmi: %.mli
+	ocamlc -c $(OCAMLCFLAGS) -o $@ $<
 
-include OCamlMakefile
+parser.cmx: parser.cmi
+parser.mli: parser.ml
+
+%.cmx: %.ml
+	ocamlfind ocamlopt -package batteries -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
+
+$(RESULT): $(OFILES)
+	ocamlopt -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
+
+clean:
+	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli $(RESULT)
