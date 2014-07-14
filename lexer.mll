@@ -3,8 +3,7 @@
    * http://www.w3.org/TR/CSS2/syndata.html#tokenization *)
   open Lexing
   open Parser
-
-  exception SyntaxError of string
+  open Types
 
   let next_line lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -51,15 +50,15 @@ rule token = parse
 
   | "<!--"              { CDO }
   | "-->"               { CDC }
-  | "~="                { INCLUDES }
-  | "|="                { DASHMATCH }
+  | ['~''|']?'=' as op  { RELATION op }
+  | ['>''~'] as c       { COMBINATOR (Char.escaped c) }
 
-  | mystring            { STRING }
-  | badstring           { BAD_STRING }
+  | mystring as s       { STRING s }
+  | badstring as s      { raise (SyntaxError "bad string") }
 
   | ident as id         { IDENT id }
 
-  | '#' (name as name)  { HASH name }
+  | '#' (name as nm)    { HASH nm }
 
   | "@import"           { IMPORT_SYM }
   | "@page"             { PAGE_SYM }
@@ -68,32 +67,17 @@ rule token = parse
 
   | '!' (w | comment)* "important"  { IMPORTANT_SYM }
 
-  | (num as n) "em"     { EMS (int_of_string n) }
-  | (num as n) "ex"     { EXS (int_of_string n) }
-  | (num as n) "px"     { LENGTH (int_of_string n, "px") }
-  | (num as n) "cm"     { LENGTH (int_of_string n, "cm") }
-  | (num as n) "mm"     { LENGTH (int_of_string n, "mm") }
-  | (num as n) "in"     { LENGTH (int_of_string n, "in") }
-  | (num as n) "pt"     { LENGTH (int_of_string n, "pt") }
-  | (num as n) "pc"     { LENGTH (int_of_string n, "pc") }
-  | (num as n) "deg"    { ANGLE (int_of_string n, "deg") }
-  | (num as n) "rad"    { ANGLE (int_of_string n, "rad") }
-  | (num as n) "grad"   { ANGLE (int_of_string n, "grad") }
-  | (num as n) "ms"     { TIME (int_of_string n, "ms") }
-  | (num as n) "s"      { TIME (int_of_string n, "s") }
-  | (num as n) "hz"     { FREQ (int_of_string n, "hz") }
-  | (num as n) "khz"    { FREQ (int_of_string n, "khz") }
-  | (num as n) "%"      { PERCENTAGE (int_of_string n) }
-  | (num as n) (ident as dim)  { DIMENSION (int_of_string n, dim) }
-  | num as n            { NUMBER (int_of_string n) }
+  | (num as n) ("em"|"ex"|"px"|"cm"|"mm"|"in"|"pt"|"pc"|"deg"|"rad"|"grad"|
+                "ms"|"s"|"hz"|"khz"|"%"|ident as u)
+  { UNIT_VALUE (float_of_string n, u) }
+  | num as n            { NUMBER (float_of_string n) }
 
   | "url(" w (mystring as uri) w ")"  { URI uri }
   | "url(" w (url as uri) w ")"       { URI uri }
-  | baduri as uri                     { BAD_URI uri }
+  | baduri as uri                     { raise (SyntaxError "bad uri") }
 
   | (ident as fn) '('   { FUNCTION fn }
 
-  | '('                 { LPAREN }
   | ')'                 { RPAREN }
   | '{'                 { LBRACE }
   | '}'                 { RBRACE }
@@ -101,6 +85,13 @@ rule token = parse
   | ']'                 { RBRACK }
   | ';'                 { SEMICOL }
   | ':'                 { COLON }
+  | ','                 { COMMA }
+
+  | '.'                 { DOT }
+  | '+'                 { PLUS }
+  | '-'                 { MINUS }
+  | '/'                 { SLASH }
+  | '*'                 { STAR }
 
   (*
   | _ as c { raise (SyntaxError ("illegal string character: " ^ Char.escaped c)) }

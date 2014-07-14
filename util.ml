@@ -23,7 +23,7 @@ let input_buffered ic chunksize =
   read_all (String.create chunksize) chunksize 0
 
 let output_css oc decls =
-  output_string oc (Stringify.decls2str decls);
+  output_string oc (Stringify.string_of_stylesheet decls);
   output_char oc '\n'
 
 let print_css = output_css stdout
