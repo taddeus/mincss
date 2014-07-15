@@ -14,22 +14,22 @@ let string_of_num n =
     then string_of_int (int_of_float n)
     else string_of_float n
 
-let rec string_of_value = function
+let rec string_of_expr = function
   | Ident id -> id
   | Strlit str -> "\"" ^ str ^ "\""
   | Uri uri when String.contains uri ')' -> "url(\"" ^ uri ^ "\")"
   | Uri uri -> "url(" ^ uri ^ ")"
-  | Concat values -> cat " " string_of_value values
-  | Number n -> string_of_num n
-  | Unit (n, u) -> string_of_num n ^ u
-  | Function (name, args) -> name ^ "(" ^ cat "," string_of_value args ^ ")"
+  | Concat values -> cat " " string_of_expr values
+  | Number (n, None) -> string_of_num n
+  | Number (n, Some u) -> string_of_num n ^ u
+  | Function (name, arg) -> name ^ "(" ^ string_of_expr arg ^ ")"
   | Hexcolor hex -> "#" ^ hex
-  | Unop (op, opnd) -> op ^ string_of_value opnd
-  | Binop (left, op, right) -> string_of_value left ^ op ^ string_of_value right
-  | Prio value -> string_of_value value ^ " !important"
+  | Unary (op, opnd) -> op ^ string_of_expr opnd
+  | Nary (op, opnds) -> cat op string_of_expr opnds
 
-let string_of_declaration (name, value) =
-  name ^ ": " ^ string_of_value value ^ ";"
+let string_of_declaration (name, value, important) =
+  let imp = if important then " !important" else "" in
+  name ^ ": " ^ string_of_expr value ^ imp ^ ";"
 
 let block body = " {\n" ^ indent body ^ "\n}"
 

@@ -1,17 +1,15 @@
-type value =
+type expr =
   | Ident of string
   | Strlit of string
   | Uri of string
-  | Concat of value list
-  | Number of float
-  | Unit of float * string
-  | Function of string * value list
+  | Concat of expr list
+  | Number of float * string option
+  | Function of string * expr
   | Hexcolor of string
-  | Unop of string * value
-  | Binop of value * string * value
-  | Prio of value
+  | Unary of string * expr
+  | Nary of string * expr list
 
-type declaration = string * value
+type declaration = string * expr * bool
 
 type selector = string list
 

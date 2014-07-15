@@ -11,6 +11,8 @@
       pos with pos_bol = lexbuf.lex_curr_pos;
               pos_lnum = pos.pos_lnum + 1
     }
+
+  let strip_quotes s = String.sub s 1 (String.length s - 2)
 }
 
 let h           = ['0'-'9''a'-'f']
@@ -40,7 +42,7 @@ let comment     = '/''*'[^'*']*'*'+([^'/''*'][^'*']*'*'+)'*''/'
 let ident       = '-'? nmstart nmchar*
 let name        = nmchar+
 let num         = ['0'-'9']+ | ['0'-'9']*'.'['0'-'9']+
-let url         = (['!''#''$''%''&''*''-''~'] | nonascii | escape)*
+let url         = (['!' '#' '$' '%' '&' '*'-'~'] | nonascii | escape)*
 
 rule token = parse
   | s                   { S }
@@ -53,8 +55,8 @@ rule token = parse
   | ['~''|']?'=' as op  { RELATION op }
   | ['>''~'] as c       { COMBINATOR (Char.escaped c) }
 
-  | mystring as s       { STRING s }
-  | badstring as s      { raise (SyntaxError "bad string") }
+  | mystring as s       { STRING (strip_quotes s) }
+  | badstring           { raise (SyntaxError "bad string") }
 
   | ident as id         { IDENT id }
 
@@ -72,9 +74,9 @@ rule token = parse
   { UNIT_VALUE (float_of_string n, u) }
   | num as n            { NUMBER (float_of_string n) }
 
-  | "url(" w (mystring as uri) w ")"  { URI uri }
+  | "url(" w (mystring as uri) w ")"  { URI (strip_quotes uri) }
   | "url(" w (url as uri) w ")"       { URI uri }
-  | baduri as uri                     { raise (SyntaxError "bad uri") }
+  | baduri                            { raise (SyntaxError "bad uri") }
 
   | (ident as fn) '('   { FUNCTION fn }
 
@@ -93,6 +95,6 @@ rule token = parse
   | '/'                 { SLASH }
   | '*'                 { STAR }
 
-  (*
-  | _ as c { raise (SyntaxError ("illegal string character: " ^ Char.escaped c)) }
-  *)
+  | eof | '\000'        { EOF }
+
+  | _ as c { raise (SyntaxError ("unexpected '" ^ Char.escaped c ^ "'")) }

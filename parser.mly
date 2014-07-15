@@ -1,14 +1,50 @@
 %{
-open Lexing
-open Types
+  (* CSS grammar based on http://www.w3.org/TR/CSS2/grammar.html *)
+  open Lexing
+  open Types
 
-let filter_none l =
-  let rec filter l = function
-    | [] -> []
-    | None :: tl -> filter l tl
-    | Some hd :: tl -> filter (hd :: l) tl
-  in
-  List.rev (filter [] l)
+  let ( |> ) a b = b a
+
+  let filter_none l =
+    let rec filter l = function
+      | [] -> l
+      | None :: tl -> filter l tl
+      | Some hd :: tl -> filter (hd :: l) tl
+    in
+    List.rev (filter [] l)
+
+  type term_t = Term of expr | Operator of string
+
+  let rec transform_value f = function
+    | Concat terms -> Concat (List.map (transform_value f) terms)
+    | Function (name, arg) -> Function (name, transform_value f arg)
+    | Unary (op, term) -> Unary (op, transform_value f term)
+    | Nary (op, terms) -> Nary (op, List.map (transform_value f) terms)
+    | value -> f value
+
+  let concat_terms terms =
+    let rec transform_ops = function
+      | [] -> []
+      | Term left :: Operator op :: Term right :: tl ->
+        Nary (op, [left; right]) :: transform_ops tl
+      | Term hd :: tl -> hd :: transform_ops tl
+      | Operator op :: _ -> raise (SyntaxError ("unexpected operator \"" ^ op ^ "\""))
+    in
+    let rec flatten_nary = function
+      | [] -> []
+      | Nary (op, Nary (op2, left) :: right) :: tl when op2 = op ->
+        Nary (op, flatten_nary left @ flatten_nary right) :: flatten_nary tl
+      | hd :: tl -> hd :: flatten_nary tl
+    in
+    let comma_to_concat =
+      List.map (transform_value (function
+        | Nary (",", terms) -> Concat terms
+        | value -> value
+      ))
+    in
+    match terms |> transform_ops |> flatten_nary |> comma_to_concat with
+    | [hd] -> hd
+    | l -> Concat l
 %}
 
 (* Tokens *)
@@ -18,7 +54,7 @@ let filter_none l =
 %token <float * string> UNIT_VALUE
 %token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
 %token RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS MINUS
-%token SLASH STAR
+%token SLASH STAR EOF
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -26,124 +62,133 @@ let filter_none l =
 
 %%
 
-%inline mylist(sep, x):
-  | l=separated_list(sep, delimited(S*, x, S*))
-  { l }
+(* list with arbitrary whitespace between elements and separators *)
+%inline wslist(sep, x): S? l=separated_list(sep, terminated(x, S?))  { l }
 
-cd: CDO S* | CDC S* {}
+cd: CDO S? | CDC S? {}
 
-%inline statement: r=ruleset | r=media | r=page { r }
 stylesheet:
-  | charset    = charset? S* cd*
+  | charset    = charset? S? cd*
     imports    = terminated(import, cd*)*
     statements = terminated(statement, cd*)*
+                 EOF
   { let charset = match charset with None -> [] | Some c -> [c] in
     charset @ imports @ statements }
+%inline statement:
+  | s=ruleset | s=media | s=page
+  { s }
 
 charset:
-  | CHARSET_SYM set=STRING SEMICOL
-  { Charset set }
+  | CHARSET_SYM name=STRING SEMICOL
+  { Charset name }
 
-%inline string_or_uri: s=STRING | s=URI { s }
+%inline string_or_uri:
+  | s=STRING | s=URI
+  { s }
 import:
-  | IMPORT_SYM S* tgt=string_or_uri media=mylist(COMMA, IDENT) SEMICOL S*
+  | IMPORT_SYM S? tgt=string_or_uri media=wslist(COMMA, IDENT) SEMICOL S?
   { Import (tgt, media) }
 
 media:
-  | MEDIA_SYM S* queries=mylist(COMMA, IDENT) LBRACE S* rulesets=ruleset* RBRACE S*
+  | MEDIA_SYM queries=wslist(COMMA, IDENT) LBRACE S? rulesets=ruleset* RBRACE S?
   { Media (queries, rulesets) }
 
 page:
-  | PAGE_SYM S* pseudo=pseudo_page? decls=decls_block
+  | PAGE_SYM S? pseudo=pseudo_page? decls=decls_block
   { Page (pseudo, decls) }
 
 pseudo_page:
-  | COLON pseudo=IDENT S*
+  | COLON pseudo=IDENT S?
   { pseudo }
 
-decls_block:
-  | LBRACE S* decls=mylist(SEMICOL, declaration?) RBRACE S*
-  { filter_none decls }
+%inline decls_block:
+  | LBRACE S? hd=declaration? tl=preceded(pair(SEMICOL, S?), declaration?)* RBRACE S?
+  { filter_none (hd :: tl) }
 
 ruleset:
   | selectors_hd = selector
-    selectors_tl = separated_list(COMMA, preceded(S*, selector))
+    selectors_tl = preceded(pair(COMMA, S?), selector)*
     decls        = decls_block
   { Ruleset (selectors_hd :: selectors_tl, decls) }
 
-%inline combinator:
-  | S* PLUS S*          { ["+"] }
-  | S* c=COMBINATOR S*  { [c] }
-  | S+                  { [] }
 selector:
-  | hd=simple_selector comb=combinator tl=selector
-  { hd :: comb @ tl }
-  | simple=simple_selector
-  { [simple] }
+  | hd=simple_selector S?
+  { [hd] }
+  | hd=simple_selector S tl=selector
+  { hd :: tl }
+  | hd=simple_selector S? c=combinator tl=selector
+  { hd :: c :: tl }
+%inline combinator:
+  | PLUS S?          { "+" }
+  | c=COMBINATOR S?  { c }
 
 simple_selector:
   | elem=element_name addons=element_addon*
   { elem ^ String.concat "" addons }
   | addons=element_addon+
   { String.concat "" addons }
-
-element_addon:
+%inline element_addon:
   | a=HASH | a=cls | a=attrib | a=pseudo
   { a }
-
-cls:
-  | DOT name=IDENT
-  { "." ^ name }
 
 element_name:
   | tag=IDENT  { tag }
   | STAR       { "*" }
 
-%inline rel_value:
-  | S* id=IDENT S*  { id }
-  | S* s=STRING S*  { s }
+cls:
+  | DOT name=IDENT
+  { "." ^ name }
+
 attrib:
-  | LBRACK S* left=IDENT S* right=pair(RELATION, rel_value)? RBRACK
+  | LBRACK S? left=IDENT S? right=pair(RELATION, rel_value)? RBRACK
   { left ^ (match right with None -> "" | Some (rel, term) -> rel ^ term) }
+%inline rel_value:
+  | S? id=IDENT S?  { id }
+  | S? s=STRING S?  { s }
 
 pseudo:
   | COLON id=IDENT
   { ":" ^ id }
-  | COLON f=FUNCTION S* arg=terminated(IDENT, S*)? RPAREN
+  | COLON f=FUNCTION S? arg=terminated(IDENT, S?)? RPAREN
   { let arg = match arg with None -> "" | Some id -> id in
     ":" ^ f ^ "(" ^ arg ^ ")" }
 
 declaration:
-  | name=IDENT S* COLON S* value=expr IMPORTANT_SYM S*
-  { (name, Prio value) }
-  | name=IDENT S* COLON S* value=expr
-  { (name, value) }
+  | name=IDENT S? COLON S? value=expr important=boption(pair(IMPORTANT_SYM, S?))
+  { (name, value, important) }
 
-%inline unary_operator:
-  | MINUS  { "-" }
-  | PLUS   { "+" }
 expr:
-  | left=expr right=expr
-  { Concat [left; right] }
-  | left=expr SLASH S* right=expr
-  { Binop (left, "/", right) }
-  | op=unary_operator n=NUMBER S*
-  { Unop (op, Number n) }
-  | op=unary_operator v=UNIT_VALUE S*
-  { let (n, u) = v in Unop (op, Unit (n, u)) }
-  | n=NUMBER S*
-  { Number n }
-  | v=UNIT_VALUE S*
-  { let (n, u) = v in Unit (n, u) }
-  | str=STRING S*
+  | l=exprl             { concat_terms l }
+%inline exprl:
+  | hd=term tl=opterm*  { Term hd :: List.concat tl }
+%inline opterm:
+  | t=term              { [Term t] }
+  | op=operator t=term  { [Operator op; Term t] }
+%inline operator:
+  | SLASH S?            { "/" }
+  | COMMA S?            { "," }
+
+term:
+  | op=unary_operator n=NUMBER S?
+  { Unary (op, Number (n, None)) }
+  | op=unary_operator v=UNIT_VALUE S?
+  { let (n, u) = v in Unary (op, Number (n, Some u)) }
+  | n=NUMBER S?
+  { Number (n, None) }
+  | v=UNIT_VALUE S?
+  { let (n, u) = v in Number (n, Some u) }
+  | str=STRING S?
   { Strlit str }
-  | id=IDENT S*
+  | id=IDENT S?
   { Ident id }
-  | uri=URI S*
+  | uri=URI S?
   { Uri uri }
-  | fn=FUNCTION S* args=separated_list(COMMA, terminated(expr, S*)) RPAREN S*
-  { Function (fn, args) }
-  | hex=HASH S*
+  | fn=FUNCTION arg=expr RPAREN S?
+  { Function (fn, arg) }
+  | hex=HASH S?
   { if Str.string_match (Str.regexp "\\d{3}\\d{3}?") hex 0
       then Hexcolor hex
       else raise (SyntaxError ("invalid color #" ^ hex)) }
+%inline unary_operator:
+  | MINUS  { "-" }
+  | PLUS   { "+" }

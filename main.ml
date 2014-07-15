@@ -48,13 +48,12 @@ let main () =
         loop files
     in
     Util.print_css css;
-    0
+    exit 0
   with
   | LocError (loc, msg) ->
     Util.prerr_loc_msg args loc ("Error: " ^ msg);
-    1
   | Failure err ->
     prerr_endline ("Error: " ^ err);
-    1
+  exit 1
 
-let _ = exit (main ())
+let _ = main ()

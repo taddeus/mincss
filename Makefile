@@ -37,4 +37,5 @@ util.cmx: stringify.cmx
 main.cmx: parse.cmx util.cmx
 
 clean:
-	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli $(RESULT)
+	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli parser.conflicts \
+		parser.automaton $(RESULT)
