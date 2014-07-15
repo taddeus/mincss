@@ -32,7 +32,9 @@ $(RESULT): $(OFILES)
 # intra-module dependencies
 parser.cmx: parser.cmi
 parser.mli: parser.ml
-parse.cmx: lexer.cmi parser.cmi
+parse.cmx: lexer.cmi parser.cmx
+util.cmx: stringify.cmx
+main.cmx: parse.cmx util.cmx
 
 clean:
 	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli $(RESULT)
