@@ -1,10 +1,13 @@
-RESULT := mincss
+RESULT    := mincss
 BASENAMES := types stringify parser lexer util parse main
-OFILES := $(addsuffix .cmx,$(BASENAMES))
+OFILES    := $(addsuffix .cmx,$(BASENAMES))
 
-OCAMLCFLAGS := -g
+OCAMLCFLAGS  := -g
 OCAMLLDFLAGS :=
-OCAMLLDLIBS := str.cmxa
+OCAMLLDLIBS  := str.cmxa
+
+OCAMLLEX  := ocamllex
+OCAMLYACC := menhir --infer --explain --dump
 
 .PHONY: all clean
 .PRECIOUS: $(addprefix .cmi,$(BASENAMES))
@@ -12,22 +15,24 @@ OCAMLLDLIBS := str.cmxa
 all: $(RESULT)
 
 %.ml: %.mll
-	ocamllex -o $@ $<
+	$(OCAMLLEX) -o $@ $<
 
 %.ml: %.mly
-	menhir --infer --explain $<
+	$(OCAMLYACC) $<
 
 %.cmi: %.mli
 	ocamlc -c $(OCAMLCFLAGS) -o $@ $<
-
-parser.cmx: parser.cmi
-parser.mli: parser.ml
 
 %.cmx: %.ml
 	ocamlfind ocamlopt -package batteries -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
 
 $(RESULT): $(OFILES)
 	ocamlopt -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
+
+# intra-module dependencies
+parser.cmx: parser.cmi
+parser.mli: parser.ml
+parse.cmx: lexer.cmi parser.cmi
 
 clean:
 	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli $(RESULT)
