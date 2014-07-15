@@ -141,7 +141,8 @@ cls:
 
 attrib:
   | LBRACK S? left=IDENT S? right=pair(RELATION, rel_value)? RBRACK
-  { left ^ (match right with None -> "" | Some (rel, term) -> rel ^ term) }
+  { let right = match right with None -> "" | Some (op, term) -> op ^ term in
+    "[" ^ left ^ right ^ "]" }
 %inline rel_value:
   | S? id=IDENT S?  { id }
   | S? s=STRING S?  { s }
