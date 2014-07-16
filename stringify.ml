@@ -80,7 +80,7 @@ let rec string_of_statement = function
   | Import (target, []) ->
     "@import " ^ string_of_expr target ^ ";"
   | Import (target, queries) ->
-    "@import " ^ string_of_expr target ^ " " ^ String.concat ", " queries ^ ";"
+    "@import " ^ string_of_expr target ^ " " ^ cat ", " string_of_media_query queries ^ ";"
   | Charset charset ->
     "@charset \"" ^ charset ^ "\";"
   | Page (None, decls) ->
@@ -140,7 +140,7 @@ let rec minify_statement = function
   | Import (target, []) ->
     "@import " ^ string_of_expr target ^ ";"
   | Import (target, queries) ->
-    "@import " ^ string_of_expr target ^ " " ^ String.concat "," queries ^ ";"
+    "@import " ^ string_of_expr target ^ " " ^ cat "," string_of_media_query queries ^ ";"
   | Page (None, decls) ->
     "@page{" ^ cat "" minify_declaration decls ^ "}"
   | Page (Some pseudo, decls) ->

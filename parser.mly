@@ -80,7 +80,7 @@ charset:
   { Charset name }
 
 import:
-  | IMPORT_SYM S? tgt=string_or_uri media=wslist(COMMA, media_type) SEMICOL S?
+  | IMPORT_SYM S? tgt=string_or_uri media=media_query_list SEMICOL S?
   { Import (tgt, media) }
 %inline string_or_uri:
   | str=STRING  { Strlit str }

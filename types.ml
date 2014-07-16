@@ -23,7 +23,7 @@ type statement =
   (* <selectors> { <declarations> } *)
   | Media of media_query list * statement list
   (* @media <queries> { <rulesets> } *)
-  | Import of expr * string list
+  | Import of expr * media_query list
   (* @import <target> [<media>]; *)
   | Charset of string
   (* @charset "<charset>"; *)
