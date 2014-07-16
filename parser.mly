@@ -26,7 +26,7 @@
     let rec transform_ops = function
       | [] -> []
       | Term left :: Operator op :: Term right :: tl ->
-        Nary (op, [left; right]) :: transform_ops tl
+        transform_ops (Term (Nary (op, [left; right])) :: tl)
       | Term hd :: tl -> hd :: transform_ops tl
       | Operator op :: _ -> raise (SyntaxError ("unexpected operator \"" ^ op ^ "\""))
     in
@@ -36,13 +36,7 @@
         Nary (op, flatten_nary left @ flatten_nary right) :: flatten_nary tl
       | hd :: tl -> hd :: flatten_nary tl
     in
-    let comma_to_concat =
-      List.map (transform_value (function
-        | Nary (",", terms) -> Concat terms
-        | value -> value
-      ))
-    in
-    match terms |> transform_ops |> flatten_nary |> comma_to_concat with
+    match terms |> transform_ops |> flatten_nary with
     | [hd] -> hd
     | l -> Concat l
 %}
@@ -79,15 +73,15 @@ stylesheet:
   { s }
 
 charset:
-  | CHARSET_SYM name=STRING SEMICOL
+  | CHARSET_SYM S? name=STRING S? SEMICOL
   { Charset name }
 
-%inline string_or_uri:
-  | s=STRING | s=URI
-  { s }
 import:
   | IMPORT_SYM S? tgt=string_or_uri media=wslist(COMMA, IDENT) SEMICOL S?
   { Import (tgt, media) }
+%inline string_or_uri:
+  | str=STRING  { Strlit str }
+  | uri=URI     { Uri uri }
 
 media:
   | MEDIA_SYM queries=wslist(COMMA, IDENT) LBRACE S? rulesets=ruleset* RBRACE S?
@@ -112,12 +106,12 @@ ruleset:
   { Ruleset (selectors_hd :: selectors_tl, decls) }
 
 selector:
-  | hd=simple_selector S?
-  { [hd] }
-  | hd=simple_selector S tl=selector
-  { hd :: tl }
-  | hd=simple_selector S? c=combinator tl=selector
-  { hd :: c :: tl }
+  | simple=simple_selector S?
+  { Simple simple }
+  | left=simple_selector S right=selector
+  { Combinator (Simple left, " ", right) }
+  | left=simple_selector S? com=combinator right=selector
+  { Combinator (Simple left, com, right) }
 %inline combinator:
   | PLUS S?          { "+" }
   | c=COMBINATOR S?  { c }
@@ -145,7 +139,7 @@ attrib:
     "[" ^ left ^ right ^ "]" }
 %inline rel_value:
   | S? id=IDENT S?  { id }
-  | S? s=STRING S?  { s }
+  | S? s=STRING S?  { "\"" ^ s ^ "\"" }
 
 pseudo:
   | COLON id=IDENT
@@ -156,7 +150,7 @@ pseudo:
 
 declaration:
   | name=IDENT S? COLON S? value=expr important=boption(pair(IMPORTANT_SYM, S?))
-  { (name, value, important) }
+  { (String.lowercase name, value, important) }
 
 expr:
   | l=exprl             { concat_terms l }
@@ -187,9 +181,11 @@ term:
   | fn=FUNCTION arg=expr RPAREN S?
   { Function (fn, arg) }
   | hex=HASH S?
-  { if Str.string_match (Str.regexp "\\d{3}\\d{3}?") hex 0
-      then Hexcolor hex
+  { let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
+    if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
+      then Hexcolor (String.lowercase hex)
       else raise (SyntaxError ("invalid color #" ^ hex)) }
-%inline unary_operator:
+
+unary_operator:
   | MINUS  { "-" }
   | PLUS   { "+" }

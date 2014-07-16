@@ -35,6 +35,8 @@ parser.mli: parser.ml
 parse.cmx: lexer.cmi parser.cmx
 util.cmx: stringify.cmx
 main.cmx: parse.cmx util.cmx
+stringify.cmx parser.cmi parser.cmx lexer.cmx util.cmx parse.cmx main.cmx: \
+	types.cmi
 
 clean:
 	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli parser.conflicts \

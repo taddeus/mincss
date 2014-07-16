@@ -11,15 +11,17 @@ type expr =
 
 type declaration = string * expr * bool
 
-type selector = string list
+type selector =
+  | Simple of string
+  | Combinator of selector * string * selector
 
 type statement =
   | Ruleset of selector list * declaration list
   (* <selectors> { <declarations> } *)
   | Media of string list * statement list
   (* @media <queries> { <rulesets> } *)
-  | Import of string * string list
-  (* @import "<file>" [<media>]; *)
+  | Import of expr * string list
+  (* @import <target> [<media>]; *)
   | Charset of string
   (* @charset "<charset>"; *)
   | Page of string option * declaration list
