@@ -122,7 +122,7 @@ let minify_media_feature = function
   | (feature, Some value) -> "(" ^ feature ^ ":" ^ minify_expr value ^ ")"
 
 let minify_media_query query =
-  let features_str = cat " and " minify_media_feature in
+  let features_str = cat "and " minify_media_feature in
   match query with
   | (None, None, features) -> features_str features
   | (None, Some mtype, features) -> mtype ^ " and " ^ features_str features
