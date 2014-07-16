@@ -15,10 +15,13 @@ type selector =
   | Simple of string
   | Combinator of selector * string * selector
 
+type media_expr = string * expr option
+type media_query = string option * string option * media_expr list
+
 type statement =
   | Ruleset of selector list * declaration list
   (* <selectors> { <declarations> } *)
-  | Media of string list * statement list
+  | Media of media_query list * statement list
   (* @media <queries> { <rulesets> } *)
   | Import of expr * string list
   (* @import <target> [<media>]; *)

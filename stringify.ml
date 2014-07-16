@@ -4,6 +4,8 @@ let tab = "    "
 
 let indent = Str.global_replace (Str.regexp "^\\(.\\)") (tab ^ "\\1")
 
+let prefix_space = function "" -> "" | s -> " " ^ s
+
 let rec cat sep fn = function
   | [] -> ""
   | [hd] -> fn hd
@@ -13,6 +15,12 @@ let string_of_num n =
   if float_of_int (int_of_float n) = n
     then string_of_int (int_of_float n)
     else string_of_float n
+
+(* TODO: move this to utils *)
+let rec filter_none = function
+  | [] -> []
+  | None :: tl -> filter_none tl
+  | Some hd :: tl -> hd :: filter_none tl
 
 (*
  * Pretty-printing
@@ -43,6 +51,23 @@ let rec string_of_selector = function
   | Combinator (left, com, right) ->
     string_of_selector left ^ " " ^ com ^ " " ^ string_of_selector right
 
+let string_of_media_feature = function
+  | (feature, None) -> "(" ^ feature ^ ")"
+  | (feature, Some value) -> "(" ^ feature ^ ": " ^ string_of_expr value ^ ")"
+
+let string_of_media_query query =
+  let features_str = cat " and " string_of_media_feature in
+  match query with
+  | (None, None, []) -> ""
+  | (None, Some mtype, []) -> mtype
+  | (Some pre, Some mtype, []) -> pre ^ " " ^ mtype
+  | (None, None, features) -> features_str features
+  | (None, Some mtype, features) -> mtype ^ " and " ^ features_str features
+  | (Some pre, Some mtype, features) ->
+    pre ^ " " ^ mtype ^ " and " ^ features_str features
+  | (Some pre, None, _) ->
+    failwith "unexpected media query prefix \"" ^ pre ^ "\""
+
 let block body = " {\n" ^ indent body ^ "\n}"
 
 let rec string_of_statement = function
@@ -50,7 +75,7 @@ let rec string_of_statement = function
     cat ", " string_of_selector selectors ^
     block (cat "\n" string_of_declaration decls)
   | Media (queries, rulesets) ->
-    "@media " ^ String.concat ", " queries ^
+    "@media" ^ prefix_space (cat ", " string_of_media_query queries) ^
     block (cat "\n\n" string_of_statement rulesets)
   | Import (target, []) ->
     "@import " ^ string_of_expr target ^ ";"
@@ -92,12 +117,25 @@ let rec minify_selector = function
   | Combinator (left, com, right) ->
     minify_selector left ^ com ^ minify_selector right
 
+let minify_media_feature = function
+  | (feature, None) -> "(" ^ feature ^ ")"
+  | (feature, Some value) -> "(" ^ feature ^ ":" ^ minify_expr value ^ ")"
+
+let minify_media_query query =
+  let features_str = cat " and " minify_media_feature in
+  match query with
+  | (None, None, features) -> features_str features
+  | (None, Some mtype, features) -> mtype ^ " and " ^ features_str features
+  | (Some pre, Some mtype, features) ->
+    pre ^ " " ^ mtype ^ " and " ^ features_str features
+  | _ -> string_of_media_query query
+
 let rec minify_statement = function
   | Ruleset (selectors, decls) ->
     cat "," minify_selector selectors ^
     "{" ^ (cat ";" minify_declaration decls) ^ "}"
   | Media (queries, rulesets) ->
-    "@media " ^ String.concat "," queries ^
+    "@media" ^ prefix_space (cat "," minify_media_query queries) ^
     "{" ^ (cat "" minify_statement rulesets) ^ "}"
   | Import (target, []) ->
     "@import " ^ string_of_expr target ^ ";"

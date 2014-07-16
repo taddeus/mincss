@@ -58,8 +58,6 @@ rule token = parse
   | mystring as s       { STRING (strip_quotes s) }
   | badstring           { raise (SyntaxError "bad string") }
 
-  | ident as id         { IDENT id }
-
   | '#' (name as nm)    { HASH nm }
 
   | "@import"           { IMPORT_SYM }
@@ -67,10 +65,16 @@ rule token = parse
   | "@media"            { MEDIA_SYM }
   | "@charset"          { CHARSET_SYM }
 
+  | "only"              { ONLY }
+  | "not"               { NOT }
+  | "and"               { AND }
+
+  | ident as id         { IDENT id }
+
   | '!' (w | comment)* "important"  { IMPORTANT_SYM }
 
   | (num as n) ("em"|"ex"|"px"|"cm"|"mm"|"in"|"pt"|"pc"|"deg"|"rad"|"grad"|
-                "ms"|"s"|"hz"|"khz"|"%"|ident as u)
+                "ms"|"s"|"hz"|"khz"|"%"|"dpi"|"dpcm"|ident as u)
   { UNIT_VALUE (float_of_string n, u) }
   | num as n            { NUMBER (float_of_string n) }
 
@@ -80,6 +84,7 @@ rule token = parse
 
   | (ident as fn) '('   { FUNCTION fn }
 
+  | '('                 { LPAREN }
   | ')'                 { RPAREN }
   | '{'                 { LBRACE }
   | '}'                 { RBRACE }

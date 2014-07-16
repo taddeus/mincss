@@ -1,17 +1,18 @@
 %{
-  (* CSS grammar based on http://www.w3.org/TR/CSS2/grammar.html *)
+  (* CSS grammar based on:
+   * - http://www.w3.org/TR/CSS2/grammar.html
+   * - http://www.w3.org/TR/css3-mediaqueries/
+   *)
   open Lexing
   open Types
 
   let ( |> ) a b = b a
 
-  let filter_none l =
-    let rec filter l = function
-      | [] -> l
-      | None :: tl -> filter l tl
-      | Some hd :: tl -> filter (hd :: l) tl
-    in
-    List.rev (filter [] l)
+  (* TODO: move this to utils *)
+  let rec filter_none = function
+    | [] -> []
+    | None :: tl -> filter_none tl
+    | Some hd :: tl -> hd :: filter_none tl
 
   type term_t = Term of expr | Operator of string
 
@@ -47,8 +48,8 @@
 %token <float> NUMBER
 %token <float * string> UNIT_VALUE
 %token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
-%token RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS MINUS
-%token SLASH STAR EOF
+%token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
+%token MINUS SLASH STAR ONLY AND NOT EOF
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -58,6 +59,7 @@
 
 (* list with arbitrary whitespace between elements and separators *)
 %inline wslist(sep, x): S? l=separated_list(sep, terminated(x, S?))  { l }
+%inline wspreceded(prefix, x): p=preceded(pair(prefix, S?), x) { p }
 
 cd: CDO S? | CDC S? {}
 
@@ -68,7 +70,8 @@ stylesheet:
                  EOF
   { let charset = match charset with None -> [] | Some c -> [c] in
     charset @ imports @ statements }
-%inline statement:
+
+statement:
   | s=ruleset | s=media | s=page
   { s }
 
@@ -77,15 +80,35 @@ charset:
   { Charset name }
 
 import:
-  | IMPORT_SYM S? tgt=string_or_uri media=wslist(COMMA, IDENT) SEMICOL S?
+  | IMPORT_SYM S? tgt=string_or_uri media=wslist(COMMA, media_type) SEMICOL S?
   { Import (tgt, media) }
 %inline string_or_uri:
   | str=STRING  { Strlit str }
   | uri=URI     { Uri uri }
 
 media:
-  | MEDIA_SYM queries=wslist(COMMA, IDENT) LBRACE S? rulesets=ruleset* RBRACE S?
+  | MEDIA_SYM queries=media_query_list LBRACE S? rulesets=ruleset* RBRACE S?
   { Media (queries, rulesets) }
+media_query_list:
+  | S?
+  { [] }
+  | S? hd=media_query tl=wspreceded(COMMA, media_query)*
+  { hd :: tl }
+media_query:
+  | prefix=only_or_not? typ=media_type S? feat=wspreceded(AND, media_expr)*
+  { (prefix, Some typ, feat) }
+  | hd=media_expr tl=wspreceded(AND, media_expr)*
+  { (None, None, (hd :: tl)) }
+%inline only_or_not:
+  | ONLY S?   { "only" }
+  | NOT S?    { "not" }
+%inline media_type:
+  | id=IDENT  { id }
+media_expr:
+  | LPAREN S? feature=media_feature S? value=wspreceded(COLON, expr)? RPAREN S?
+  { (feature, value) }
+%inline media_feature:
+  | id=IDENT  { id }
 
 page:
   | PAGE_SYM S? pseudo=pseudo_page? decls=decls_block
@@ -96,12 +119,12 @@ pseudo_page:
   { pseudo }
 
 %inline decls_block:
-  | LBRACE S? hd=declaration? tl=preceded(pair(SEMICOL, S?), declaration?)* RBRACE S?
+  | LBRACE S? hd=declaration? tl=wspreceded(SEMICOL, declaration?)* RBRACE S?
   { filter_none (hd :: tl) }
 
 ruleset:
   | selectors_hd = selector
-    selectors_tl = preceded(pair(COMMA, S?), selector)*
+    selectors_tl = wspreceded(COMMA, selector)*
     decls        = decls_block
   { Ruleset (selectors_hd :: selectors_tl, decls) }
 
