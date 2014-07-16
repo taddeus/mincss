@@ -44,12 +44,12 @@
 
 (* Tokens *)
 %token S CDO CDC IMPORT_SYM PAGE_SYM MEDIA_SYM CHARSET_SYM FONT_FACE_SYM
-%token NAMESPACE_SYM KEYFRAMES_SYM IMPORTANT_SYM
+%token NAMESPACE_SYM KEYFRAMES_SYM SUPPORTS_SYM IMPORTANT_SYM
 %token <float> PERCENTAGE NUMBER
 %token <float * string> UNIT_VALUE
 %token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
-%token MINUS SLASH STAR ONLY AND NOT FROM TO EOF
+%token MINUS SLASH STAR ONLY AND OR NOT FROM TO EOF
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -67,14 +67,19 @@ stylesheet:
   | charset    = charset? S? cd*
     imports    = terminated(import, cd*)*
     namespaces = terminated(namespace, cd*)*
-    statements = terminated(statement, cd*)*
+    statements = terminated(nested_statement, cd*)*
                  EOF
   { let charset = match charset with None -> [] | Some c -> [c] in
     charset @ imports @ namespaces @ statements }
 
-statement:
-  | s=ruleset | s=media | s=page | s=font_face | s=keyframes
+nested_statement:
+  | s=ruleset | s=media | s=page | s=font_face_rule | s=keyframes_rule
+  | s=supports_rule
   { s }
+
+group_rule_body:
+  | LBRACE S? statements=nested_statement* RBRACE S?
+  { statements }
 
 charset:
   | CHARSET_SYM name=STRING S? SEMICOL
@@ -95,7 +100,7 @@ namespace:
   { prefix }
 
 media:
-  | MEDIA_SYM queries=media_query_list LBRACE S? rulesets=ruleset* RBRACE S?
+  | MEDIA_SYM queries=media_query_list rulesets=group_rule_body
   { Media (queries, rulesets) }
 media_query_list:
   | S?
@@ -125,7 +130,7 @@ pseudo_page:
   | COLON pseudo=IDENT S?
   { pseudo }
 
-font_face:
+font_face_rule:
   | FONT_FACE_SYM S? LBRACE S? hd=descriptor_declaration?
     tl=wspreceded(SEMICOL, descriptor_declaration?)* RBRACE S?
   { Font_face (filter_none (hd :: tl)) }
@@ -133,7 +138,7 @@ descriptor_declaration:
   | name=property COLON S? value=expr
   { (name, value) }
 
-keyframes:
+keyframes_rule:
   | KEYFRAMES_SYM S? id=IDENT S? LBRACE S? rules=keyframe_ruleset* RBRACE S?
   { Keyframes (id, rules) }
 keyframe_ruleset:
@@ -143,6 +148,47 @@ keyframe_selector:
   | FROM          { Ident "from" }
   | TO            { Ident "to" }
   | n=PERCENTAGE  { Number (n, Some "%") }
+
+supports_rule:
+  | SUPPORTS_SYM S? cond=supports_condition S? body=group_rule_body
+  { Supports (cond, body) }
+supports_condition:
+  | c=supports_negation
+  | c=supports_conjunction
+  | c=supports_disjunction
+  | c=supports_condition_in_parens
+  { c }
+supports_condition_in_parens:
+  | LPAREN S? c=supports_condition S? RPAREN
+  | c=supports_declaration_condition
+  (*XXX: | c=general_enclosed*)
+  { c }
+supports_negation:
+  | NOT S c=supports_condition_in_parens
+  { Not c }
+supports_conjunction:
+  | hd=supports_condition_in_parens tl=preceded(delimited(S, AND, S), supports_condition_in_parens)+
+  { And (hd :: tl) }
+supports_disjunction:
+  | hd=supports_condition_in_parens tl=preceded(delimited(S, OR, S), supports_condition_in_parens)+
+  { Or (hd :: tl) }
+supports_declaration_condition:
+  | LPAREN S? decl=declaration RPAREN
+  { Decl decl }
+  (*XXX:
+general_enclosed:
+  | ( FUNCTION | LPAREN ) ( any | unused )* RPAREN
+  {  }
+
+any:
+[ IDENT | NUMBER | PERCENTAGE | DIMENSION | STRING
+              | DELIM | URI | HASH | UNICODE-RANGE | INCLUDES
+              | DASHMATCH | ':' | FUNCTION S* [any|unused]* ')'
+              | '(' S* [any|unused]* ')' | '[' S* [any|unused]* ']'
+              ]
+S*;
+unused      : block | ATKEYWORD S* | ';' S* | CDO S* | CDC S*;
+  *)
 
 %inline decls_block:
   | LBRACE S? hd=declaration? tl=wspreceded(SEMICOL, declaration?)* RBRACE S?

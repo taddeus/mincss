@@ -17,10 +17,18 @@ let string_of_num n =
     else string_of_float n
 
 (* TODO: move this to utils *)
+let (@@) f g x = f (g x)
+
 let rec filter_none = function
   | [] -> []
   | None :: tl -> filter_none tl
   | Some hd :: tl -> hd :: filter_none tl
+
+let add_parens s =
+  let l = String.length s in
+  if l > 0 & s.[0] = '(' & s.[l - 1] = ')'
+    then String.sub s 1 (l - 2)
+    else s
 
 (*
  * Pretty-printing
@@ -68,6 +76,13 @@ let string_of_media_query query =
   | (Some pre, None, _) ->
     failwith "unexpected media query prefix \"" ^ pre ^ "\""
 
+let rec string_of_condition = function
+  | Not c -> "not " ^ add_parens (string_of_condition c)
+  | And c -> cat " and " (add_parens @@ string_of_condition) c
+  | Or c -> cat " or " (add_parens @@ string_of_condition) c
+  | Decl (name, value, false) -> "(" ^ name ^ ": " ^ string_of_expr value ^ ")"
+  | Decl (_, _, true) -> failwith "unexpected \"!important\""
+
 let block = function "" -> " {}" | body -> " {\n" ^ indent body ^ "\n}"
 
 let rec string_of_statement = function
@@ -101,6 +116,9 @@ let rec string_of_statement = function
       string_of_expr expr ^ block (cat "\n" string_of_declaration decls)
     in
     "@keyframes " ^ id ^ block (cat "\n\n" string_of_keyframe_ruleset rules)
+  | Supports (condition, statements) ->
+    "@supports " ^ string_of_condition condition ^
+    block (cat "\n\n" string_of_statement statements)
 
 let string_of_stylesheet = cat "\n\n" string_of_statement
 
@@ -138,6 +156,13 @@ let minify_media_query query =
     pre ^ " " ^ mtype ^ " and " ^ features_str features
   | _ -> string_of_media_query query
 
+let rec minify_condition = function
+  | Not c -> "not " ^ add_parens (minify_condition c)
+  | And c -> cat "and " (add_parens @@ minify_condition) c
+  | Or c -> cat "or " (add_parens @@ minify_condition) c
+  | Decl (name, value, false) -> "(" ^ name ^ ":" ^ minify_expr value ^ ")"
+  | Decl (_, _, true) -> failwith "unexpected \"!important\""
+
 let rec minify_statement = function
   | Ruleset (selectors, decls) ->
     cat "," minify_selector selectors ^
@@ -163,6 +188,9 @@ let rec minify_statement = function
       minify_expr expr ^ "{" ^ cat ";" minify_declaration decls ^ "}"
     in
     "@keyframes " ^ id ^ "{" ^ cat "" minify_keyframe_ruleset rules ^ "}"
+  | Supports (condition, statements) ->
+    "@supports " ^ minify_condition condition ^
+    "{" ^ cat "" minify_statement statements ^ "}"
   | statement -> string_of_statement statement
 
 let minify_stylesheet = cat "" minify_statement

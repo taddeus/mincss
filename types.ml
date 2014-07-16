@@ -22,6 +22,13 @@ type descriptor_declaration = string * expr
 
 type keyframe_ruleset = expr * declaration list
 
+type condition =
+  | Not of condition
+  | And of condition list
+  | Or of condition list
+  | Decl of declaration
+  (*XXX: | Enclosed of expr*)
+
 type statement =
   | Ruleset of selector list * declaration list
   (* <selectors> { <declarations> } *)
@@ -38,7 +45,10 @@ type statement =
   | Namespace of string option * expr
   (* @namespace [<prefix>] "<uri>"; *)
   | Keyframes of string * keyframe_ruleset list
-  (* TODO: @document, @supports *)
+  (* @keyframes <id> { <rulesets> } *)
+  | Supports of condition * statement list
+  (* @supports <condition> { <rulesets> } *)
+  (* TODO: @document *)
 
 type stylesheet = statement list
 

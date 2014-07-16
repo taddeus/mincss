@@ -95,10 +95,12 @@ rule token = parse
   | '@' F O N T '-' F A C E  { FONT_FACE_SYM }
   | '@' N A M E S P A C E    { NAMESPACE_SYM }
   | '@' K E Y F R A M E S    { KEYFRAMES_SYM }
+  | '@' S U P P O R T S      { SUPPORTS_SYM }
 
   | O N L Y             { ONLY }
   | N O T               { NOT }
   | A N D               { AND }
+  | O R                 { OR }
   | F R O M             { FROM }
   | T O                 { TO }
 
