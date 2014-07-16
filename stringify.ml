@@ -68,7 +68,7 @@ let string_of_media_query query =
   | (Some pre, None, _) ->
     failwith "unexpected media query prefix \"" ^ pre ^ "\""
 
-let block body = " {\n" ^ indent body ^ "\n}"
+let block = function "" -> " {}" | body -> " {\n" ^ indent body ^ "\n}"
 
 let rec string_of_statement = function
   | Ruleset (selectors, decls) ->
@@ -87,12 +87,20 @@ let rec string_of_statement = function
     "@page" ^ block (cat "\n" string_of_declaration decls)
   | Page (Some pseudo, decls) ->
     "@page :" ^ pseudo ^ block (cat "\n" string_of_declaration decls)
-  | Fontface decls ->
-    "@font-face " ^ block (cat "\n" string_of_declaration decls)
+  | Font_face decls ->
+    let string_of_descriptor_declaration (name, value) =
+      name ^ ": " ^ string_of_expr value ^ ";"
+    in
+    "@font-face" ^ block (cat "\n" string_of_descriptor_declaration decls)
   | Namespace (None, uri) ->
-    "@namespace \"" ^ uri ^ "\";"
+    "@namespace " ^ string_of_expr uri ^ ";"
   | Namespace (Some prefix, uri) ->
-    "@namespace " ^ prefix ^ " \"" ^ uri ^ "\";"
+    "@namespace " ^ prefix ^ " " ^ string_of_expr uri ^ ";"
+  | Keyframes (id, rules) ->
+    let string_of_keyframe_ruleset (expr, decls) =
+      string_of_expr expr ^ block (cat "\n" string_of_declaration decls)
+    in
+    "@keyframes " ^ id ^ block (cat "\n\n" string_of_keyframe_ruleset rules)
 
 let string_of_stylesheet = cat "\n\n" string_of_statement
 
@@ -133,10 +141,10 @@ let minify_media_query query =
 let rec minify_statement = function
   | Ruleset (selectors, decls) ->
     cat "," minify_selector selectors ^
-    "{" ^ (cat ";" minify_declaration decls) ^ "}"
+    "{" ^ cat ";" minify_declaration decls ^ "}"
   | Media (queries, rulesets) ->
     "@media" ^ prefix_space (cat "," minify_media_query queries) ^
-    "{" ^ (cat "" minify_statement rulesets) ^ "}"
+    "{" ^ cat "" minify_statement rulesets ^ "}"
   | Import (target, []) ->
     "@import " ^ string_of_expr target ^ ";"
   | Import (target, queries) ->
@@ -145,8 +153,16 @@ let rec minify_statement = function
     "@page{" ^ cat "" minify_declaration decls ^ "}"
   | Page (Some pseudo, decls) ->
     "@page :" ^ pseudo ^ "{" ^ cat "" minify_declaration decls ^ "}"
-  | Fontface decls ->
-    "@font-face{" ^ cat "" minify_declaration decls ^ "}"
+  | Font_face decls ->
+    let minify_descriptor_declaration (name, value) =
+      name ^ ":" ^ string_of_expr value
+    in
+    "@font-face{" ^ cat ";" minify_descriptor_declaration decls ^ "}"
+  | Keyframes (id, rules) ->
+    let minify_keyframe_ruleset (expr, decls) =
+      minify_expr expr ^ "{" ^ cat ";" minify_declaration decls ^ "}"
+    in
+    "@keyframes " ^ id ^ "{" ^ cat "" minify_keyframe_ruleset rules ^ "}"
   | statement -> string_of_statement statement
 
 let minify_stylesheet = cat "" minify_statement

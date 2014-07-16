@@ -18,6 +18,10 @@ type selector =
 type media_expr = string * expr option
 type media_query = string option * string option * media_expr list
 
+type descriptor_declaration = string * expr
+
+type keyframe_ruleset = expr * declaration list
+
 type statement =
   | Ruleset of selector list * declaration list
   (* <selectors> { <declarations> } *)
@@ -29,11 +33,12 @@ type statement =
   (* @charset "<charset>"; *)
   | Page of string option * declaration list
   (* @page [<pseudo_page>] { <declarations> } *)
-  | Fontface of declaration list
+  | Font_face of descriptor_declaration list
   (* @font-face { <declarations> } *)
-  | Namespace of string option * string
+  | Namespace of string option * expr
   (* @namespace [<prefix>] "<uri>"; *)
-  (* TODO: @document, @keyframes, @supports *)
+  | Keyframes of string * keyframe_ruleset list
+  (* TODO: @document, @supports *)
 
 type stylesheet = statement list
 

@@ -32,7 +32,7 @@ let parse_args () =
 let main () =
   let args = parse_args () in
   try
-    let css =
+    let stylesheet =
       match args.infiles with
       | [] ->
         let input = Util.input_buffered stdin 512 in
@@ -42,12 +42,14 @@ let main () =
           | [] -> []
           | filename :: tl ->
             let input = Util.input_all (open_in filename) in
-            let css = Parse.parse_input filename input in
-            css @ loop tl
+            let stylesheet = Parse.parse_input filename input in
+            stylesheet @ loop tl
         in
         loop files
     in
-    Util.print_css css;
+    print_endline (Stringify.string_of_stylesheet stylesheet);
+    print_endline "\n";
+    print_endline (Stringify.minify_stylesheet stylesheet);
     exit 0
   with
   | LocError (loc, msg) ->

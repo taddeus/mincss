@@ -44,6 +44,34 @@ let name        = nmchar+
 let num         = ['0'-'9']+ | ['0'-'9']*'.'['0'-'9']+
 let url         = (['!' '#' '$' '%' '&' '*'-'~'] | nonascii | escape)*
 
+let A = ['a' 'A']
+let B = ['b' 'B']
+let C = ['c' 'C']
+let D = ['d' 'D']
+let E = ['e' 'E']
+let F = ['f' 'F']
+let G = ['g' 'G']
+let H = ['h' 'H']
+let I = ['i' 'I']
+let J = ['j' 'J']
+let K = ['k' 'K']
+let L = ['l' 'L']
+let M = ['m' 'M']
+let N = ['n' 'N']
+let O = ['o' 'O']
+let P = ['p' 'P']
+let Q = ['q' 'Q']
+let R = ['r' 'R']
+let S = ['s' 'S']
+let T = ['t' 'T']
+let U = ['u' 'U']
+let V = ['v' 'V']
+let W = ['w' 'W']
+let X = ['x' 'X']
+let Y = ['y' 'Y']
+let Z = ['z' 'Z']
+
+
 rule token = parse
   | s                   { S }
 
@@ -60,21 +88,27 @@ rule token = parse
 
   | '#' (name as nm)    { HASH nm }
 
-  | "@import"           { IMPORT_SYM }
-  | "@page"             { PAGE_SYM }
-  | "@media"            { MEDIA_SYM }
-  | "@charset"          { CHARSET_SYM }
+  | '@' I M P O R T          { IMPORT_SYM }
+  | '@' P A G E              { PAGE_SYM }
+  | '@' M E D I A            { MEDIA_SYM }
+  | "@charset "              { CHARSET_SYM }
+  | '@' F O N T '-' F A C E  { FONT_FACE_SYM }
+  | '@' N A M E S P A C E    { NAMESPACE_SYM }
+  | '@' K E Y F R A M E S    { KEYFRAMES_SYM }
 
-  | "only"              { ONLY }
-  | "not"               { NOT }
-  | "and"               { AND }
+  | O N L Y             { ONLY }
+  | N O T               { NOT }
+  | A N D               { AND }
+  | F R O M             { FROM }
+  | T O                 { TO }
 
   | ident as id         { IDENT id }
 
-  | '!' (w | comment)* "important"  { IMPORTANT_SYM }
+  | '!' (w | comment)* I M P O R T A N T  { IMPORTANT_SYM }
 
-  | (num as n) ("em"|"ex"|"px"|"cm"|"mm"|"in"|"pt"|"pc"|"deg"|"rad"|"grad"|
-                "ms"|"s"|"hz"|"khz"|"%"|"dpi"|"dpcm"|ident as u)
+  |  (num as n) '%'     { PERCENTAGE (float_of_string n) }
+  |  (num as n) (E M | E X | P X | C M | M M | I N | P T | P C | D E G |
+                 G? R A D | M? S | K? H Z | D P (I | C M) | ident as u)
   { UNIT_VALUE (float_of_string n, u) }
   | num as n            { NUMBER (float_of_string n) }
 

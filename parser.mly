@@ -43,13 +43,13 @@
 %}
 
 (* Tokens *)
-%token S CDO CDC IMPORT_SYM PAGE_SYM MEDIA_SYM CHARSET_SYM
-%token IMPORTANT_SYM
-%token <float> NUMBER
+%token S CDO CDC IMPORT_SYM PAGE_SYM MEDIA_SYM CHARSET_SYM FONT_FACE_SYM
+%token NAMESPACE_SYM KEYFRAMES_SYM IMPORTANT_SYM
+%token <float> PERCENTAGE NUMBER
 %token <float * string> UNIT_VALUE
 %token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
-%token MINUS SLASH STAR ONLY AND NOT EOF
+%token MINUS SLASH STAR ONLY AND NOT FROM TO EOF
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -66,17 +66,18 @@ cd: CDO S? | CDC S? {}
 stylesheet:
   | charset    = charset? S? cd*
     imports    = terminated(import, cd*)*
+    namespaces = terminated(namespace, cd*)*
     statements = terminated(statement, cd*)*
                  EOF
   { let charset = match charset with None -> [] | Some c -> [c] in
-    charset @ imports @ statements }
+    charset @ imports @ namespaces @ statements }
 
 statement:
-  | s=ruleset | s=media | s=page
+  | s=ruleset | s=media | s=page | s=font_face | s=keyframes
   { s }
 
 charset:
-  | CHARSET_SYM S? name=STRING S? SEMICOL
+  | CHARSET_SYM name=STRING S? SEMICOL
   { Charset name }
 
 import:
@@ -85,6 +86,13 @@ import:
 %inline string_or_uri:
   | str=STRING  { Strlit str }
   | uri=URI     { Uri uri }
+
+namespace:
+  | NAMESPACE_SYM S? prefix=terminated(namespace_prefix, S?)? ns=string_or_uri S? SEMICOL S?
+  { Namespace (prefix, ns) }
+%inline namespace_prefix:
+  | prefix=IDENT
+  { prefix }
 
 media:
   | MEDIA_SYM queries=media_query_list LBRACE S? rulesets=ruleset* RBRACE S?
@@ -113,10 +121,28 @@ media_expr:
 page:
   | PAGE_SYM S? pseudo=pseudo_page? decls=decls_block
   { Page (pseudo, decls) }
-
 pseudo_page:
   | COLON pseudo=IDENT S?
   { pseudo }
+
+font_face:
+  | FONT_FACE_SYM S? LBRACE S? hd=descriptor_declaration?
+    tl=wspreceded(SEMICOL, descriptor_declaration?)* RBRACE S?
+  { Font_face (filter_none (hd :: tl)) }
+descriptor_declaration:
+  | name=property COLON S? value=expr
+  { (name, value) }
+
+keyframes:
+  | KEYFRAMES_SYM S? id=IDENT S? LBRACE S? rules=keyframe_ruleset* RBRACE S?
+  { Keyframes (id, rules) }
+keyframe_ruleset:
+  | selector=keyframe_selector S? decls=decls_block
+  { (selector, decls) }
+keyframe_selector:
+  | FROM          { Ident "from" }
+  | TO            { Ident "to" }
+  | n=PERCENTAGE  { Number (n, Some "%") }
 
 %inline decls_block:
   | LBRACE S? hd=declaration? tl=wspreceded(SEMICOL, declaration?)* RBRACE S?
@@ -172,8 +198,9 @@ pseudo:
     ":" ^ f ^ "(" ^ arg ^ ")" }
 
 declaration:
-  | name=IDENT S? COLON S? value=expr important=boption(pair(IMPORTANT_SYM, S?))
+  | name=property S? COLON S? value=expr important=boption(pair(IMPORTANT_SYM, S?))
   { (String.lowercase name, value, important) }
+%inline property: name=IDENT  { name }
 
 expr:
   | l=exprl             { concat_terms l }
@@ -187,28 +214,21 @@ expr:
   | COMMA S?            { "," }
 
 term:
-  | op=unary_operator n=NUMBER S?
-  { Unary (op, Number (n, None)) }
-  | op=unary_operator v=UNIT_VALUE S?
-  { let (n, u) = v in Unary (op, Number (n, Some u)) }
-  | n=NUMBER S?
-  { Number (n, None) }
-  | v=UNIT_VALUE S?
-  { let (n, u) = v in Number (n, Some u) }
-  | str=STRING S?
-  { Strlit str }
-  | id=IDENT S?
-  { Ident id }
-  | uri=URI S?
-  { Uri uri }
-  | fn=FUNCTION arg=expr RPAREN S?
-  { Function (fn, arg) }
+  | op=unary_operator v=numval S?   { Unary (op, v) }
+  | v=numval S?                     { v }
+  | str=STRING S?                   { Strlit str }
+  | id=IDENT S?                     { Ident id }
+  | uri=URI S?                      { Uri uri }
+  | fn=FUNCTION arg=expr RPAREN S?  { Function (fn, arg) }
   | hex=HASH S?
   { let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
     if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
       then Hexcolor (String.lowercase hex)
       else raise (SyntaxError ("invalid color #" ^ hex)) }
-
 unary_operator:
   | MINUS  { "-" }
   | PLUS   { "+" }
+%inline numval:
+  | n=NUMBER      { Number (n, None) }
+  | v=UNIT_VALUE  { let n, u = v in Number (n, Some u) }
+  | n=PERCENTAGE  { Number (n, Some "%") }
