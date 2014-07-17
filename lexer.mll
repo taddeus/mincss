@@ -31,17 +31,17 @@ let mystring    = string1 | string2
 let badstring1  = '"' ([^'\n' '\r' '\012' '"'] | '\\'nl | escape)* '\\'?
 let badstring2  = '\'' ([^'\n' '\r' '\012' '\''] | '\\'nl | escape)* '\\'?
 let badstring   = badstring1 | badstring2
-let badcomment1 = '/' '*'[^'*']*'*'+([^'/' '*'][^'*']*'*'+)*
-let badcomment2 = '/' '*'[^'*']*('*'+[^'/' '*'][^'*']*)*
+let badcomment1 = "/*" [^'*']* '*'+ ([^'/' '*'] [^'*']* '*'+)*
+let badcomment2 = "/*" [^'*']* ('*'+ [^'/' '*'] [^'*']*)*
 let badcomment  = badcomment1 | badcomment2
 let baduri1     = "url(" w (['!' '#' '$' '%' '&' '*'-'[' ']'-'~'] | nonascii | escape)* w
 let baduri2     = "url(" w mystring w
 let baduri3     = "url(" w badstring
 let baduri      = baduri1 | baduri2 | baduri3
-let comment     = "/*" [^'*']* '*'+ ([^'/' '*'] [^'*']* '*'+) "*/"
+let comment     = "/*" [^'*']* '*'+ ([^'/' '*'] [^'*']* '*'+)* '/'
 let ident       = '-'? nmstart nmchar*
 let name        = nmchar+
-let num         = ['0'-'9']+ | ['0'-'9']*'.'['0'-'9']+
+let num         = ['0'-'9']+ | ['0'-'9']* '.' ['0'-'9']+
 let url         = (['!' '#' '$' '%' '&' '*'-'~'] | nonascii | escape)*
 
 let A = ['a' 'A']
@@ -75,8 +75,8 @@ let Z = ['z' 'Z']
 rule token = parse
   | s                   { S }
 
-  | comment             (* ignore comments *)
-  | badcomment          (* unclosed comment at EOF *)
+  | comment                              (* ignore comments *)
+  | badcomment          { token lexbuf } (* unclosed comment at EOF *)
 
   | "<!--"              { CDO }
   | "-->"               { CDC }

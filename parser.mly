@@ -58,13 +58,13 @@
 %%
 
 (* list with arbitrary whitespace between elements and separators *)
-%inline wslist(sep, x): S? l=separated_list(sep, terminated(x, S?))  { l }
-%inline wspreceded(prefix, x): p=preceded(pair(prefix, S?), x) { p }
+%inline wslist(sep, x): S* l=separated_list(sep, terminated(x, S*))  { l }
+%inline wspreceded(prefix, x): p=preceded(pair(prefix, S*), x) { p }
 
-cd: CDO S? | CDC S? {}
+cd: CDO S* | CDC S* {}
 
 stylesheet:
-  | charset    = charset? S? cd*
+  | charset    = charset? S* cd*
     imports    = terminated(import, cd*)*
     namespaces = terminated(namespace, cd*)*
     statements = terminated(nested_statement, cd*)*
@@ -78,22 +78,22 @@ nested_statement:
   { s }
 
 group_rule_body:
-  | LBRACE S? statements=nested_statement* RBRACE S?
+  | LBRACE S* statements=nested_statement* RBRACE S*
   { statements }
 
 charset:
-  | CHARSET_SYM name=STRING S? SEMICOL
+  | CHARSET_SYM name=STRING S* SEMICOL
   { Charset name }
 
 import:
-  | IMPORT_SYM S? tgt=string_or_uri media=media_query_list SEMICOL S?
+  | IMPORT_SYM S* tgt=string_or_uri media=media_query_list SEMICOL S*
   { Import (tgt, media) }
 %inline string_or_uri:
   | str=STRING  { Strlit str }
   | uri=URI     { Uri uri }
 
 namespace:
-  | NAMESPACE_SYM S? prefix=terminated(namespace_prefix, S?)? ns=string_or_uri S? SEMICOL S?
+  | NAMESPACE_SYM S* prefix=terminated(namespace_prefix, S*)? ns=string_or_uri S* SEMICOL S*
   { Namespace (prefix, ns) }
 %inline namespace_prefix:
   | prefix=IDENT
@@ -103,46 +103,46 @@ media:
   | MEDIA_SYM queries=media_query_list rulesets=group_rule_body
   { Media (queries, rulesets) }
 media_query_list:
-  | S?
+  | S*
   { [] }
-  | S? hd=media_query tl=wspreceded(COMMA, media_query)*
+  | S* hd=media_query tl=wspreceded(COMMA, media_query)*
   { hd :: tl }
 media_query:
-  | prefix=only_or_not? typ=media_type S? feat=wspreceded(AND, media_expr)*
+  | prefix=only_or_not? typ=media_type S* feat=wspreceded(AND, media_expr)*
   { (prefix, Some typ, feat) }
   | hd=media_expr tl=wspreceded(AND, media_expr)*
   { (None, None, (hd :: tl)) }
 %inline only_or_not:
-  | ONLY S?   { "only" }
-  | NOT S?    { "not" }
+  | ONLY S*   { "only" }
+  | NOT S*    { "not" }
 %inline media_type:
   | id=IDENT  { id }
 media_expr:
-  | LPAREN S? feature=media_feature S? value=wspreceded(COLON, expr)? RPAREN S?
+  | LPAREN S* feature=media_feature S* value=wspreceded(COLON, expr)? RPAREN S*
   { (feature, value) }
 %inline media_feature:
   | id=IDENT  { id }
 
 page:
-  | PAGE_SYM S? pseudo=pseudo_page? decls=decls_block
+  | PAGE_SYM S* pseudo=pseudo_page? decls=decls_block
   { Page (pseudo, decls) }
 pseudo_page:
-  | COLON pseudo=IDENT S?
+  | COLON pseudo=IDENT S*
   { pseudo }
 
 font_face_rule:
-  | FONT_FACE_SYM S? LBRACE S? hd=descriptor_declaration?
-    tl=wspreceded(SEMICOL, descriptor_declaration?)* RBRACE S?
+  | FONT_FACE_SYM S* LBRACE S* hd=descriptor_declaration?
+    tl=wspreceded(SEMICOL, descriptor_declaration?)* RBRACE S*
   { Font_face (filter_none (hd :: tl)) }
 descriptor_declaration:
-  | name=property COLON S? value=expr
+  | name=property COLON S* value=expr
   { (name, value) }
 
 keyframes_rule:
-  | KEYFRAMES_SYM S? id=IDENT S? LBRACE S? rules=keyframe_ruleset* RBRACE S?
+  | KEYFRAMES_SYM S* id=IDENT S* LBRACE S* rules=keyframe_ruleset* RBRACE S*
   { Keyframes (id, rules) }
 keyframe_ruleset:
-  | selector=keyframe_selector S? decls=decls_block
+  | selector=keyframe_selector S* decls=decls_block
   { (selector, decls) }
 keyframe_selector:
   | FROM          { Ident "from" }
@@ -150,7 +150,7 @@ keyframe_selector:
   | n=PERCENTAGE  { Number (n, Some "%") }
 
 supports_rule:
-  | SUPPORTS_SYM S? cond=supports_condition S? body=group_rule_body
+  | SUPPORTS_SYM S* cond=supports_condition S* body=group_rule_body
   { Supports (cond, body) }
 supports_condition:
   | c=supports_negation
@@ -159,21 +159,21 @@ supports_condition:
   | c=supports_condition_in_parens
   { c }
 supports_condition_in_parens:
-  | LPAREN S? c=supports_condition S? RPAREN
+  | LPAREN S* c=supports_condition S* RPAREN
   | c=supports_declaration_condition
   (*XXX: | c=general_enclosed*)
   { c }
 supports_negation:
-  | NOT S c=supports_condition_in_parens
+  | NOT S+ c=supports_condition_in_parens
   { Not c }
 supports_conjunction:
-  | hd=supports_condition_in_parens tl=preceded(delimited(S, AND, S), supports_condition_in_parens)+
+  | hd=supports_condition_in_parens tl=preceded(delimited(S+, AND, S+), supports_condition_in_parens)+
   { And (hd :: tl) }
 supports_disjunction:
-  | hd=supports_condition_in_parens tl=preceded(delimited(S, OR, S), supports_condition_in_parens)+
+  | hd=supports_condition_in_parens tl=preceded(delimited(S+, OR, S+), supports_condition_in_parens)+
   { Or (hd :: tl) }
 supports_declaration_condition:
-  | LPAREN S? decl=declaration RPAREN
+  | LPAREN S* decl=declaration RPAREN
   { Decl decl }
   (*XXX:
 general_enclosed:
@@ -191,7 +191,7 @@ unused      : block | ATKEYWORD S* | ';' S* | CDO S* | CDC S*;
   *)
 
 %inline decls_block:
-  | LBRACE S? hd=declaration? tl=wspreceded(SEMICOL, declaration?)* RBRACE S?
+  | LBRACE S* hd=declaration? tl=wspreceded(SEMICOL, declaration?)* RBRACE S*
   { filter_none (hd :: tl) }
 
 ruleset:
@@ -201,15 +201,15 @@ ruleset:
   { Ruleset (selectors_hd :: selectors_tl, decls) }
 
 selector:
-  | simple=simple_selector S?
+  | simple=simple_selector S*
   { Simple simple }
-  | left=simple_selector S right=selector
+  | left=simple_selector S+ right=selector
   { Combinator (Simple left, " ", right) }
-  | left=simple_selector S? com=combinator right=selector
+  | left=simple_selector S* com=combinator right=selector
   { Combinator (Simple left, com, right) }
 %inline combinator:
-  | PLUS S?          { "+" }
-  | c=COMBINATOR S?  { c }
+  | PLUS S*          { "+" }
+  | c=COMBINATOR S*  { c }
 
 simple_selector:
   | elem=element_name addons=element_addon*
@@ -229,22 +229,22 @@ cls:
   { "." ^ name }
 
 attrib:
-  | LBRACK S? left=IDENT S? right=pair(RELATION, rel_value)? RBRACK
+  | LBRACK S* left=IDENT S* right=pair(RELATION, rel_value)? RBRACK
   { let right = match right with None -> "" | Some (op, term) -> op ^ term in
     "[" ^ left ^ right ^ "]" }
 %inline rel_value:
-  | S? id=IDENT S?  { id }
-  | S? s=STRING S?  { "\"" ^ s ^ "\"" }
+  | S* id=IDENT S*  { id }
+  | S* s=STRING S*  { "\"" ^ s ^ "\"" }
 
 pseudo:
   | COLON id=IDENT
   { ":" ^ id }
-  | COLON f=FUNCTION S? arg=terminated(IDENT, S?)? RPAREN
+  | COLON f=FUNCTION S* arg=terminated(IDENT, S*)? RPAREN
   { let arg = match arg with None -> "" | Some id -> id in
     ":" ^ f ^ "(" ^ arg ^ ")" }
 
 declaration:
-  | name=property S? COLON S? value=expr important=boption(pair(IMPORTANT_SYM, S?))
+  | name=property S* COLON S* value=expr important=boption(pair(IMPORTANT_SYM, S*))
   { (String.lowercase name, value, important) }
 %inline property: name=IDENT  { name }
 
@@ -256,17 +256,17 @@ expr:
   | t=term              { [Term t] }
   | op=operator t=term  { [Operator op; Term t] }
 %inline operator:
-  | SLASH S?            { "/" }
-  | COMMA S?            { "," }
+  | SLASH S*            { "/" }
+  | COMMA S*            { "," }
 
 term:
-  | op=unary_operator v=numval S?   { Unary (op, v) }
-  | v=numval S?                     { v }
-  | str=STRING S?                   { Strlit str }
-  | id=IDENT S?                     { Ident id }
-  | uri=URI S?                      { Uri uri }
-  | fn=FUNCTION arg=expr RPAREN S?  { Function (fn, arg) }
-  | hex=HASH S?
+  | op=unary_operator v=numval S*   { Unary (op, v) }
+  | v=numval S*                     { v }
+  | str=STRING S*                   { Strlit str }
+  | id=IDENT S*                     { Ident id }
+  | uri=URI S*                      { Uri uri }
+  | fn=FUNCTION arg=expr RPAREN S*  { Function (fn, arg) }
+  | hex=HASH S*
   { let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
     if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
       then Hexcolor (String.lowercase hex)
