@@ -22,11 +22,13 @@ type descriptor_declaration = string * expr
 
 type keyframe_ruleset = expr * declaration list
 
+type supports_declaration = string * expr
+
 type condition =
   | Not of condition
   | And of condition list
   | Or of condition list
-  | Decl of declaration
+  | Decl of supports_declaration
   (*XXX: | Enclosed of expr*)
 
 type statement =

@@ -97,10 +97,13 @@ rule token = parse
   | '@' K E Y F R A M E S    { KEYFRAMES_SYM }
   | '@' S U P P O R T S      { SUPPORTS_SYM }
 
+  | (w | comment)* w A N D w (w | comment)* { SUPPORTS_AND }
+  | (w | comment)* w O R w (w | comment)*   { SUPPORTS_OR }
+
   | O N L Y             { ONLY }
   | N O T               { NOT }
   | A N D               { AND }
-  | O R                 { OR }
+  (*| O R                 { OR } removed in favor of SUPPORTS_OR *)
   | F R O M             { FROM }
   | T O                 { TO }
 

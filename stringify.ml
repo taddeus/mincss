@@ -27,8 +27,7 @@ let rec filter_none = function
 let add_parens s =
   let l = String.length s in
   if l > 0 & s.[0] = '(' & s.[l - 1] = ')'
-    then String.sub s 1 (l - 2)
-    else s
+    then s else "(" ^ s ^ ")"
 
 (*
  * Pretty-printing
@@ -76,12 +75,24 @@ let string_of_media_query query =
   | (Some pre, None, _) ->
     failwith "unexpected media query prefix \"" ^ pre ^ "\""
 
-let rec string_of_condition = function
-  | Not c -> "not " ^ add_parens (string_of_condition c)
-  | And c -> cat " and " (add_parens @@ string_of_condition) c
-  | Or c -> cat " or " (add_parens @@ string_of_condition) c
-  | Decl (name, value, false) -> "(" ^ name ^ ": " ^ string_of_expr value ^ ")"
-  | Decl (_, _, true) -> failwith "unexpected \"!important\""
+let stringify_condition w c =
+  let rec transform =
+    let p c = `Parens (transform c) in
+    function
+    | Not c -> `Not (p c)
+    | And c -> `And (List.map p c)
+    | Or c -> `Or (List.map p c)
+    | Decl (name, value) -> `Decl (name, value)
+  in
+  let rec str = function
+    | `Not c -> "not " ^ str c
+    | `And c -> cat " and " str c
+    | `Or c -> cat " or " str c
+    | `Decl (name, value) -> "(" ^ name ^ ":" ^ w ^ string_of_expr value ^ ")"
+    | `Parens (`Decl _ as d) -> str d
+    | `Parens c -> "(" ^ str c ^ ")"
+  in
+  str (transform c)
 
 let block = function "" -> " {}" | body -> " {\n" ^ indent body ^ "\n}"
 
@@ -117,7 +128,7 @@ let rec string_of_statement = function
     in
     "@keyframes " ^ id ^ block (cat "\n\n" string_of_keyframe_ruleset rules)
   | Supports (condition, statements) ->
-    "@supports " ^ string_of_condition condition ^
+    "@supports " ^ stringify_condition " " condition ^
     block (cat "\n\n" string_of_statement statements)
 
 let string_of_stylesheet = cat "\n\n" string_of_statement
@@ -158,10 +169,9 @@ let minify_media_query query =
 
 let rec minify_condition = function
   | Not c -> "not " ^ add_parens (minify_condition c)
-  | And c -> cat "and " (add_parens @@ minify_condition) c
-  | Or c -> cat "or " (add_parens @@ minify_condition) c
-  | Decl (name, value, false) -> "(" ^ name ^ ":" ^ minify_expr value ^ ")"
-  | Decl (_, _, true) -> failwith "unexpected \"!important\""
+  | And c -> cat " and " (add_parens @@ minify_condition) c
+  | Or c -> cat " or " (add_parens @@ minify_condition) c
+  | Decl (name, value) -> "(" ^ name ^ ":" ^ minify_expr value ^ ")"
 
 let rec minify_statement = function
   | Ruleset (selectors, decls) ->
@@ -189,7 +199,7 @@ let rec minify_statement = function
     in
     "@keyframes " ^ id ^ "{" ^ cat "" minify_keyframe_ruleset rules ^ "}"
   | Supports (condition, statements) ->
-    "@supports " ^ minify_condition condition ^
+    "@supports " ^ stringify_condition "" condition ^
     "{" ^ cat "" minify_statement statements ^ "}"
   | statement -> string_of_statement statement
 

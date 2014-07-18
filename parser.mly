@@ -53,7 +53,8 @@
 %token <float * string> UNIT_VALUE
 %token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
-%token MINUS SLASH STAR ONLY AND OR NOT FROM TO EOF
+%token MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
+%token SUPPORTS_AND SUPPORTS_OR
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -62,8 +63,12 @@
 %%
 
 (* list with arbitrary whitespace between elements and separators *)
+%inline ig2(a, b): a b {}
+%inline ig3(a, b, c): a b c {}
 %inline wslist(sep, x): S* l=separated_list(sep, terminated(x, S*))  { l }
-%inline wspreceded(prefix, x): p=preceded(pair(prefix, S*), x) { p }
+%inline wspreceded(prefix, x): p=preceded(ig2(prefix, S*), x) { p }
+
+%inline all_and: AND | SUPPORTS_AND {}
 
 cd: CDO S* | CDC S* {}
 
@@ -112,9 +117,9 @@ media_query_list:
   | S* hd=media_query tl=wspreceded(COMMA, media_query)*
   { hd :: tl }
 media_query:
-  | prefix=only_or_not? typ=media_type S* feat=wspreceded(AND, media_expr)*
+  | prefix=only_or_not? typ=media_type S* feat=wspreceded(all_and, media_expr)*
   { (prefix, Some typ, feat) }
-  | hd=media_expr tl=wspreceded(AND, media_expr)*
+  | hd=media_expr tl=wspreceded(all_and, media_expr)*
   { (None, None, (hd :: tl)) }
 %inline only_or_not:
   | ONLY S*   { "only" }
@@ -171,18 +176,21 @@ supports_negation:
   | NOT S+ c=supports_condition_in_parens
   { Not c }
 supports_conjunction:
-  | hd=supports_condition_in_parens tl=preceded(delimited(S+, AND, S+), supports_condition_in_parens)+
+  | hd=supports_condition_in_parens tl=preceded(SUPPORTS_AND, supports_condition_in_parens)+
   { And (hd :: tl) }
 supports_disjunction:
-  | hd=supports_condition_in_parens tl=preceded(delimited(S+, OR, S+), supports_condition_in_parens)+
+  | hd=supports_condition_in_parens tl=preceded(SUPPORTS_OR, supports_condition_in_parens)+
   { Or (hd :: tl) }
 supports_declaration_condition:
-  | LPAREN S* decl=declaration RPAREN
+  | LPAREN S* decl=supports_declaration RPAREN
   { Decl decl }
+supports_declaration:
+  | name=property S* COLON S* value=expr
+  { (name, value) }
   (*XXX:
 general_enclosed:
   | ( FUNCTION | LPAREN ) ( any | unused )* RPAREN
-  {  }
+  { Enclosed expr }
 
 any:
 [ IDENT | NUMBER | PERCENTAGE | DIMENSION | STRING
@@ -248,7 +256,7 @@ pseudo:
     ":" ^ f ^ "(" ^ arg ^ ")" }
 
 declaration:
-  | name=property S* COLON S* value=expr important=boption(pair(IMPORTANT_SYM, S*))
+  | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))
   { (String.lowercase name, value, important) }
 %inline property: name=IDENT  { name }
 
