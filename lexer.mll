@@ -25,7 +25,7 @@ let unicode     = '\\' h(h(h(h(h(h)?)?)?)?)? wc?
 let escape      = unicode | '\\'[^'\r' '\n' '\012' '0'-'9' 'a'-'f' 'A'-'F']
 let nmstart     = ['_' 'a'-'z' 'A'-'Z'] | nonascii | escape
 let nmchar      = ['_' 'a'-'z' 'A'-'Z' '0'-'9' '-'] | nonascii | escape
-let string1     = '"'([^'\n' '\r' '\012' '"'] | '\\'nl | escape)*'"'
+let string1     = '"' ([^'\n' '\r' '\012' '"'] | '\\'nl | escape)* '"'
 let string2     = '\'' ([^'\n' '\r' '\012' '\''] | '\\' nl | escape)* '\''
 let mystring    = string1 | string2
 let badstring1  = '"' ([^'\n' '\r' '\012' '"'] | '\\'nl | escape)* '\\'?
@@ -71,6 +71,8 @@ let X = ['x' 'X']
 let Y = ['y' 'Y']
 let Z = ['z' 'Z']
 
+let uagent = ('-' ("webkit" | "moz"  | "ms" | "o") '-')?
+
 
 rule token = parse
   | s                   { S }
@@ -88,14 +90,14 @@ rule token = parse
 
   | '#' (name as nm)    { HASH nm }
 
-  | '@' I M P O R T          { IMPORT_SYM }
-  | '@' P A G E              { PAGE_SYM }
-  | '@' M E D I A            { MEDIA_SYM }
-  | "@charset "              { CHARSET_SYM }
-  | '@' F O N T '-' F A C E  { FONT_FACE_SYM }
-  | '@' N A M E S P A C E    { NAMESPACE_SYM }
-  | '@' K E Y F R A M E S    { KEYFRAMES_SYM }
-  | '@' S U P P O R T S      { SUPPORTS_SYM }
+  | '@' I M P O R T               { IMPORT_SYM }
+  | '@' P A G E                   { PAGE_SYM }
+  | '@' M E D I A                 { MEDIA_SYM }
+  | "@charset "                   { CHARSET_SYM }
+  | '@' F O N T '-' F A C E       { FONT_FACE_SYM }
+  | '@' N A M E S P A C E         { NAMESPACE_SYM }
+  | '@' uagent K E Y F R A M E S  { KEYFRAMES_SYM }
+  | '@' S U P P O R T S           { SUPPORTS_SYM }
 
   | (w | comment)* w A N D w (w | comment)* { SUPPORTS_AND }
   | (w | comment)* w O R w (w | comment)*   { SUPPORTS_OR }
@@ -141,4 +143,5 @@ rule token = parse
 
   | eof | '\000'        { EOF }
 
+  | _                   { token lexbuf }
   | _ as c { raise (SyntaxError ("unexpected '" ^ Char.escaped c ^ "'")) }

@@ -251,7 +251,9 @@ pseudo:
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))
   { (String.lowercase name, value, important) }
-%inline property: name=IDENT  { name }
+%inline property:
+  | name=IDENT       { name }
+  | STAR name=IDENT  { "*" ^ name }  (* IE7 property name hack *)
 
 expr:
   | l=exprl             { concat_terms l }
