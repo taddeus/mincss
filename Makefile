@@ -30,7 +30,8 @@ $(RESULT): $(OFILES)
 	ocamlopt -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
 
 # intra-module dependencies
-parser.cmx: parser.cmi
+lexer.cmi: lexer.ml
+parser.cmx: parser.cmi lexer.cmi
 parser.mli: parser.ml
 parse.cmx: lexer.cmi parser.cmx
 util.cmx: stringify.cmx
