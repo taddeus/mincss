@@ -50,7 +50,6 @@ type statement =
   (* @keyframes <id> { <rulesets> } *)
   | Supports of condition * statement list
   (* @supports <condition> { <rulesets> } *)
-  (* TODO: @document *)
 
 type stylesheet = statement list
 
