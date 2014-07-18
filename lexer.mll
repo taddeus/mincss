@@ -143,5 +143,4 @@ rule token = parse
 
   | eof | '\000'        { EOF }
 
-  | _                   { token lexbuf }
   | _ as c { raise (SyntaxError ("unexpected '" ^ Char.escaped c ^ "'")) }
