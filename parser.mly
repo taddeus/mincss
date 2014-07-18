@@ -2,13 +2,17 @@
   (* CSS grammar based on:
    * - http://www.w3.org/TR/CSS2/grammar.html
    * - http://www.w3.org/TR/css3-mediaqueries/
+   * - http://www.w3.org/TR/css3-fonts/
+   * - http://www.w3.org/TR/css3-namespace/
+   * - http://www.w3.org/TR/css3-animations/
+   * - http://www.w3.org/TR/css3-conditional/
    *)
   open Lexing
   open Types
 
+  (* TODO: move this to utils *)
   let ( |> ) a b = b a
 
-  (* TODO: move this to utils *)
   let rec filter_none = function
     | [] -> []
     | None :: tl -> filter_none tl
