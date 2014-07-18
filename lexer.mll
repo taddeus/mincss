@@ -80,8 +80,8 @@ rule token = parse
 
   | "<!--"              { CDO }
   | "-->"               { CDC }
-  | ['~''|']?'=' as op  { RELATION op }
-  | ['>''~'] as c       { COMBINATOR (Char.escaped c) }
+  | ['~' '^' '$' '*' '|']? '=' as op  { RELATION op }
+  | ['>' '~'] as c      { COMBINATOR (Char.escaped c) }
 
   | mystring as s       { STRING (strip_quotes s) }
   | badstring           { raise (SyntaxError "bad string") }

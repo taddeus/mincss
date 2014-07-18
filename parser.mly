@@ -228,18 +228,13 @@ simple_selector:
   { elem ^ String.concat "" addons }
   | addons=element_addon+
   { String.concat "" addons }
-%inline element_addon:
-  | a=HASH | a=cls | a=attrib | a=pseudo
-  { a }
-
+%inline element_addon: a=HASH | a=cls | a=attrib | a=pseudo { a }
 element_name:
   | tag=IDENT  { tag }
   | STAR       { "*" }
-
 cls:
   | DOT name=IDENT
   { "." ^ name }
-
 attrib:
   | LBRACK S* left=IDENT S* right=pair(RELATION, rel_value)? RBRACK
   { let right = match right with None -> "" | Some (op, term) -> op ^ term in
@@ -247,13 +242,11 @@ attrib:
 %inline rel_value:
   | S* id=IDENT S*  { id }
   | S* s=STRING S*  { "\"" ^ s ^ "\"" }
-
 pseudo:
   | COLON id=IDENT
   { ":" ^ id }
-  | COLON f=FUNCTION S* arg=terminated(IDENT, S*)? RPAREN
-  { let arg = match arg with None -> "" | Some id -> id in
-    ":" ^ f ^ "(" ^ arg ^ ")" }
+  | COLON f=FUNCTION args=wslist(COMMA, simple_selector) RPAREN
+  { ":" ^ f ^ "(" ^ String.concat "," args ^ ")" }
 
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))
