@@ -1,6 +1,18 @@
 open Printf
-open Str
 open Types
+
+(** Operators *)
+
+let (|>) a b = b a
+
+(** List utilities *)
+
+let rec filter_none = function
+  | [] -> []
+  | None :: tl -> filter_none tl
+  | Some hd :: tl -> hd :: filter_none tl
+
+(** Reading input from file/stdin *)
 
 let input_all ic =
   let n = in_channel_length ic in
@@ -22,11 +34,7 @@ let input_buffered ic chunksize =
   in
   read_all (String.create chunksize) chunksize 0
 
-let output_css oc decls =
-  output_string oc (Stringify.string_of_stylesheet decls);
-  output_char oc '\n'
-
-let print_css = output_css stdout
+(** Error printing *)
 
 let noloc = ("", 0, 0, 0, 0)
 
@@ -41,7 +49,7 @@ let count_tabs str upto =
 
 let rec repeat s n = if n < 1 then "" else s ^ (repeat s (n - 1))
 
-let retab str = global_replace (regexp "\t") (repeat " " tabwidth) str
+let retab str = Str.global_replace (Str.regexp "\t") (repeat " " tabwidth) str
 
 let indent n = repeat (repeat " " (tabwidth - 1)) n
 

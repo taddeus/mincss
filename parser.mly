@@ -9,14 +9,7 @@
    *)
   open Lexing
   open Types
-
-  (* TODO: move this to utils *)
-  let ( |> ) a b = b a
-
-  let rec filter_none = function
-    | [] -> []
-    | None :: tl -> filter_none tl
-    | Some hd :: tl -> hd :: filter_none tl
+  open Util
 
   type term_t = Term of expr | Operator of string
 

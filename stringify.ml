@@ -1,4 +1,5 @@
 open Types
+open Util
 
 let tab = "    "
 
@@ -15,19 +16,6 @@ let string_of_num n =
   if float_of_int (int_of_float n) = n
     then string_of_int (int_of_float n)
     else string_of_float n
-
-(* TODO: move this to utils *)
-let (@@) f g x = f (g x)
-
-let rec filter_none = function
-  | [] -> []
-  | None :: tl -> filter_none tl
-  | Some hd :: tl -> hd :: filter_none tl
-
-let add_parens s =
-  let l = String.length s in
-  if l > 0 & s.[0] = '(' & s.[l - 1] = ')'
-    then s else "(" ^ s ^ ")"
 
 (*
  * Pretty-printing
@@ -166,12 +154,6 @@ let minify_media_query query =
   | (Some pre, Some mtype, features) ->
     pre ^ " " ^ mtype ^ " and " ^ features_str features
   | _ -> string_of_media_query query
-
-let rec minify_condition = function
-  | Not c -> "not " ^ add_parens (minify_condition c)
-  | And c -> cat " and " (add_parens @@ minify_condition) c
-  | Or c -> cat " or " (add_parens @@ minify_condition) c
-  | Decl (name, value) -> "(" ^ name ^ ":" ^ minify_expr value ^ ")"
 
 let rec minify_statement = function
   | Ruleset (selectors, decls) ->
