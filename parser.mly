@@ -270,9 +270,9 @@ term:
   | op=unary_operator v=numval S*   { unary_number (Unary (op, v)) }
   | v=numval S*                     { v }
   | str=STRING S*                   { Strlit str }
-  | id=IDENT S*                     { Ident id }
+  | id=IDENT S*                     { Ident (String.lowercase id) }
   | uri=URI S*                      { Uri uri }
-  | fn=FUNCTION arg=expr RPAREN S*  { Function (fn, arg) }
+  | fn=FUNCTION arg=expr RPAREN S*  { Function (String.lowercase fn, arg) }
   | hex=HASH S*
   { let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
     if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
@@ -283,5 +283,5 @@ unary_operator:
   | PLUS   { "+" }
 %inline numval:
   | n=NUMBER      { Number (n, None) }
-  | v=UNIT_VALUE  { let n, u = v in Number (n, Some u) }
+  | v=UNIT_VALUE  { let n, u = v in Number (n, Some (String.lowercase u)) }
   | n=PERCENTAGE  { Number (n, Some "%") }
