@@ -230,7 +230,7 @@ simple_selector:
   { String.concat "" addons }
 %inline element_addon: a=HASH | a=cls | a=attrib | a=pseudo { a }
 element_name:
-  | tag=IDENT  { tag }
+  | tag=IDENT  { String.lowercase tag }
   | STAR       { "*" }
 cls:
   | DOT name=IDENT
@@ -238,13 +238,13 @@ cls:
 attrib:
   | LBRACK S* left=IDENT S* right=pair(RELATION, rel_value)? RBRACK
   { let right = match right with None -> "" | Some (op, term) -> op ^ term in
-    "[" ^ left ^ right ^ "]" }
+    "[" ^ String.lowercase left ^ right ^ "]" }
 %inline rel_value:
   | S* id=IDENT S*  { id }
   | S* s=STRING S*  { "\"" ^ s ^ "\"" }
 pseudo:
   | COLON id=IDENT
-  { ":" ^ id }
+  { ":" ^ (String.lowercase id) }
   | COLON f=FUNCTION args=wslist(COMMA, simple_selector) RPAREN
   { ":" ^ f ^ "(" ^ String.concat "," args ^ ")" }
 
