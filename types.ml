@@ -57,6 +57,6 @@ type stylesheet = statement list
 
 type loc = string * int * int * int * int
 
-exception SyntaxError of string
+exception Syntax_error of string
 
-exception LocError of loc * string
+exception Loc_error of loc * string

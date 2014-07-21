@@ -27,7 +27,7 @@ let parse_input display_name content =
   let lexbuf = Lexing.from_string content in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = display_name };
   try Parser.stylesheet Lexer.token lexbuf with
-  | SyntaxError msg ->
-    raise (LocError (shift_back lexbuf, msg))
+  | Syntax_error msg ->
+    raise (Loc_error (shift_back lexbuf, msg))
   | Parser.Error ->
-    raise (LocError (shift_back lexbuf, "syntax error"))
+    raise (Loc_error (shift_back lexbuf, "syntax error"))

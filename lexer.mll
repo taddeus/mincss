@@ -5,11 +5,21 @@
   open Parser
   open Types
 
-  let next_line lexbuf =
+  let advance_pos lexbuf =
+    let s = Lexing.lexeme lexbuf in
+    let rec search from lines =
+      try
+        ignore (Str.search_forward (Str.regexp "\r\n\\|\r\\|\n") s from);
+        search (Str.match_end ()) (lines + 1)
+      with Not_found ->
+        lines, String.length s - from
+    in
+    let lines, cols = search 0 0 in
+
     let pos = lexbuf.lex_curr_p in
     lexbuf.lex_curr_p <- {
-      pos with pos_bol = lexbuf.lex_curr_pos;
-              pos_lnum = pos.pos_lnum + 1
+      pos with pos_bol = lexbuf.lex_curr_pos - cols;
+               pos_lnum = pos.pos_lnum + lines
     }
 
   let strip_quotes s = String.sub s 1 (String.length s - 2)
@@ -75,10 +85,9 @@ let uagent = ('-' ("webkit" | "moz"  | "ms" | "o") '-')?
 
 
 rule token = parse
-  | s                   { S }
-
-  | comment                              (* ignore comments *)
-  | badcomment          { token lexbuf } (* unclosed comment at EOF *)
+  | "\r\n" | '\r' | '\n'  { new_line lexbuf; S }
+  | [' ' '\t' '\012']+  { S }
+  | "/*"                { comment lexbuf }
 
   | "<!--"              { CDO }
   | "-->"               { CDC }
@@ -86,7 +95,7 @@ rule token = parse
   | ['>' '~'] as c      { COMBINATOR (Char.escaped c) }
 
   | mystring as s       { STRING (strip_quotes s) }
-  | badstring           { raise (SyntaxError "bad string") }
+  | badstring           { raise (Syntax_error "bad string") }
 
   | '#' (name as nm)    { HASH nm }
 
@@ -99,8 +108,8 @@ rule token = parse
   | '@' uagent K E Y F R A M E S  { KEYFRAMES_SYM }
   | '@' S U P P O R T S           { SUPPORTS_SYM }
 
-  | (w | comment)* w A N D w (w | comment)* { WS_AND }
-  | (w | comment)* w O R w (w | comment)*   { WS_OR }
+  | (s | comment)* s A N D s (s | comment)*  { advance_pos lexbuf; WS_AND }
+  | (s | comment)* s O R   s (s | comment)*  { advance_pos lexbuf; WS_OR }
 
   | O N L Y             { ONLY }
   | N O T               { NOT }
@@ -111,7 +120,7 @@ rule token = parse
 
   | ident as id         { IDENT id }
 
-  | '!' (w | comment)* I M P O R T A N T  { IMPORTANT_SYM }
+  | '!' (s | comment)* I M P O R T A N T  { IMPORTANT_SYM }
 
   |  (num as n) '%'     { PERCENTAGE (float_of_string n) }
   |  (num as n) (E M | E X | P X | C M | M M | I N | P T | P C | D E G |
@@ -119,9 +128,12 @@ rule token = parse
   { UNIT_VALUE (float_of_string n, u) }
   | num as n            { NUMBER (float_of_string n) }
 
-  | "url(" w (mystring as uri) w ")"  { URI (strip_quotes uri) }
-  | "url(" w (url as uri) w ")"       { URI uri }
-  | baduri                            { raise (SyntaxError "bad uri") }
+  | "url(" w (mystring as uri) w ")"  { advance_pos lexbuf; URI (strip_quotes uri) }
+  | "url(" w (url as uri) w ")"       { advance_pos lexbuf; URI uri }
+  | baduri              { raise (Syntax_error "bad uri") }
+  (*
+  | "url("              { url_start lexbuf }
+  *)
 
   | (ident as fn) '('   { FUNCTION fn }
 
@@ -143,4 +155,28 @@ rule token = parse
 
   | eof | '\000'        { EOF }
 
-  | _ as c { raise (SyntaxError ("unexpected '" ^ Char.escaped c ^ "'")) }
+  | _ as c { raise (Syntax_error ("unexpected '" ^ Char.escaped c ^ "'")) }
+
+(* Comments *)
+and comment = parse
+  | '\r' | '\n' | "\r\n"  { new_line lexbuf; comment lexbuf }
+  | "*/"                  { token lexbuf }
+  | eof | '\000'          { raise (Syntax_error "unclosed comment") }
+  | _                     { comment lexbuf }
+
+(*
+(* URLs *)
+and url_start = parse
+  | '\r' | '\n' | "\r\n"  { new_line lexbuf; url_start lexbuf }
+  | [' ' '\t' '\012']+    { url_start lexbuf }
+  | urlc+ as uri          { url_end uri lexbuf }
+  | ')'                   { URI "" }
+  | mystring as s         { url_end (strip_quotes s) lexbuf }
+  | badstring             { raise (Syntax_error "bad string") }
+  | (eof | '\000' | _) as c { raise (Syntax_error ("unexpected '" ^ c ^ "'")) }
+and url_end uri = parse
+  | '\r' | '\n' | "\r\n"  { new_line lexbuf; url_end uri lexbuf }
+  | [' ' '\t' '\012']+    { url_end uri lexbuf }
+  | ')'                   { URI uri }
+  | (eof | '\000' | _) as c { raise (Syntax_error ("unexpected '" ^ c ^ "'")) }
+*)

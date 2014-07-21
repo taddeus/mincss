@@ -33,7 +33,7 @@
       | Term left :: Operator op :: Term right :: tl ->
         transform_ops (Term (Nary (op, [left; right])) :: tl)
       | Term hd :: tl -> hd :: transform_ops tl
-      | Operator op :: _ -> raise (SyntaxError ("unexpected operator \"" ^ op ^ "\""))
+      | Operator op :: _ -> raise (Syntax_error ("unexpected operator \"" ^ op ^ "\""))
     in
     let rec flatten_nary = function
       | [] -> []
@@ -277,7 +277,7 @@ term:
   { let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
     if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
       then Hexcolor (String.lowercase hex)
-      else raise (SyntaxError ("invalid color #" ^ hex)) }
+      else raise (Syntax_error ("invalid color #" ^ hex)) }
 unary_operator:
   | MINUS  { "-" }
   | PLUS   { "+" }

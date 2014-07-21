@@ -89,7 +89,7 @@ let main () =
       handle_args args;
       exit 0
     with
-    | LocError (loc, msg) ->
+    | Loc_error (loc, msg) ->
       Util.prerr_loc_msg (args.verbose >= 1) loc ("Error: " ^ msg);
     | Failure err ->
       prerr_endline ("Error: " ^ err);
