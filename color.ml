@@ -38,7 +38,7 @@ let rec short = function
 
   (* rgb(r,g,b) -> #rrggbb *)
   | Function ("rgb", Nary (",", [r; g; b]))
-    when is_num r & is_num g & is_num b ->
+    when is_num r && is_num g && is_num b ->
     let i c =
       match clip c with
       | Number (n, None) -> int_of_float n
