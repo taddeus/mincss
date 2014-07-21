@@ -50,6 +50,8 @@ type statement =
   (* @keyframes <id> { <rulesets> } *)
   | Supports of condition * statement list
   (* @supports <condition> { <rulesets> } *)
+  | Comment of string
+  (* /* ... */ *)
 
 type stylesheet = statement list
 

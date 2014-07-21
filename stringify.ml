@@ -130,6 +130,8 @@ let rec string_of_statement = function
   | Supports (condition, statements) ->
     "@supports " ^ stringify_condition " " condition ^
     block (cat "\n\n" string_of_statement statements)
+  | Comment text ->
+    "/*" ^ text ^ "*/"
 
 let string_of_stylesheet = cat "\n\n" string_of_statement
 
