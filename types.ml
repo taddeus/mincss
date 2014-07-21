@@ -53,6 +53,20 @@ type statement =
 
 type stylesheet = statement list
 
+type traversal_box =
+  | Expr of expr
+  | Declaration of declaration
+  | Selector of selector
+  | Media_expr of media_expr
+  | Media_query of media_query
+  | Descriptor_declaration of descriptor_declaration
+  | Keyframe_ruleset of keyframe_ruleset
+  | Supports_declaration of supports_declaration
+  | Condition of condition
+  | Statement of statement
+  | Stylesheet of stylesheet
+  | Clear
+
 type loc = string * int * int * int * int
 
 exception Syntax_error of string

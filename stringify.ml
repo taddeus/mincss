@@ -50,9 +50,9 @@ let string_of_media_feature = function
   | (feature, None) -> "(" ^ feature ^ ")"
   | (feature, Some value) -> "(" ^ feature ^ ": " ^ string_of_expr value ^ ")"
 
-let string_of_media_query query =
+let string_of_media_query =
   let features_str = cat " and " string_of_media_feature in
-  match query with
+  function
   | (None, None, []) -> ""
   | (None, Some mtype, []) -> mtype
   | (Some pre, Some mtype, []) -> pre ^ " " ^ mtype

@@ -36,6 +36,7 @@ parser.cmx: parser.cmi lexer.cmi
 parser.mli: parser.ml
 parse.cmx: lexer.cmi parser.cmx
 main.cmx: parse.cmx util.cmx color.cmx
+util.cmx: OCAMLCFLAGS += -pp cpp
 $(addsuffix .cmx,$(MODULES)): $(addsuffix .cmi,$(PRE_TGTS))
 
 clean:

@@ -53,17 +53,9 @@ let rec short = function
 
   | c -> c
 
-let rec compress_props = function
-  | [] -> []
+let transform = function
+  | Declaration ("color", color, imp) ->
+    Declaration ("color", short color, imp)
+  | v -> v
 
-  | ("color", c, i) :: tl ->
-    ("color", short c, i) :: compress_props tl
-
-  | hd :: tl -> hd :: compress_props tl
-
-let rec compress = function
-  | [] -> []
-  | Ruleset (selectors, properties) :: tl ->
-    Ruleset (selectors, compress_props properties) :: compress tl
-  | hd :: tl ->
-    hd :: compress tl
+let compress = Util.transform_stylesheet transform

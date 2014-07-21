@@ -11,14 +11,7 @@
   open Types
   open Util
 
-  type term_t = Term of expr | Operator of string
-
-  let rec transform_value f = function
-    | Concat terms -> Concat (List.map (transform_value f) terms)
-    | Function (name, arg) -> Function (name, transform_value f arg)
-    | Unary (op, term) -> Unary (op, transform_value f term)
-    | Nary (op, terms) -> Nary (op, List.map (transform_value f) terms)
-    | value -> f value
+  type term = Term of expr | Operator of string
 
   let concat_terms terms =
     let rec transform_ops = function
