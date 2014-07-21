@@ -53,12 +53,6 @@ type statement =
 
 type stylesheet = statement list
 
-type args = {
-  mutable infiles : string list;
-  mutable outfile : string option;
-  mutable verbose : int;
-}
-
 type loc = string * int * int * int * int
 
 exception SyntaxError of string

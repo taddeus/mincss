@@ -36,7 +36,8 @@ let count_tabs str upto =
   let rec count n = function
     | 0 -> n
     | i -> count (if String.get str (i - 1) = '\t' then n + 1 else n) (i - 1)
-  in count 0 upto
+  in
+  count 0 upto
 
 let rec repeat s n = if n < 1 then "" else s ^ (repeat s (n - 1))
 
@@ -48,7 +49,7 @@ let prerr_loc (fname, ystart, yend, xstart, xend) =
   let file = open_in fname in
 
   (* skip lines until the first matched line *)
-  for i = 1 to ystart - 1 do let _ = input_line file in () done;
+  for i = 1 to ystart - 1 do ignore (input_line file) done;
 
   (* for each line in `loc`, print the source line with an underline *)
   for l = ystart to yend do
@@ -63,11 +64,10 @@ let prerr_loc (fname, ystart, yend, xstart, xend) =
       for i = left to right do prerr_char '^' done;
       prerr_endline "";
     end
-  done;
-  ()
+  done
 
-let prerr_loc_msg args loc msg =
-  if args.verbose >= 1 then begin
+let prerr_loc_msg verbose loc msg =
+  if verbose then begin
     let (fname, ystart, yend, xstart, xend) = loc in
     if loc != noloc then begin
       let line_s = if yend != ystart
@@ -82,8 +82,7 @@ let prerr_loc_msg args loc msg =
     end;
     eprintf "%s\n" msg;
 
-    if args.verbose >= 1 && loc != noloc then
+    if verbose && loc != noloc then
         try prerr_loc loc
         with Sys_error _ -> ()
-  end;
-  ()
+  end
