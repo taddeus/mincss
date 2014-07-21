@@ -111,7 +111,7 @@ let prerr_loc_msg verbose loc msg =
     | constructor decl -> decl \
     | _ -> failwith ("expected " ^ #constructor)
 
-let transform_stylesheet (f : traversal_box -> traversal_box) stylesheet =
+let transform_stylesheet f stylesheet =
   let rec trav_expr = function
     | Concat terms -> f (Expr (Concat (trav_all_expr terms)))
     | Function (name, arg) -> f (Expr (Function (name, expect_expr arg)))

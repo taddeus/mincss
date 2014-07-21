@@ -53,7 +53,7 @@ type statement =
 
 type stylesheet = statement list
 
-type traversal_box =
+type box =
   | Expr of expr
   | Declaration of declaration
   | Selector of selector
