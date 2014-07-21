@@ -67,6 +67,7 @@ let handle_args args =
   | {echo = true} ->
     write_output (Stringify.string_of_stylesheet stylesheet)
   | _ ->
+    let stylesheet = Color.compress stylesheet in
     let output = Stringify.minify_stylesheet stylesheet in
     write_output output;
     if args.verbose >= 2 then begin

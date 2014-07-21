@@ -37,6 +37,13 @@
     match terms |> transform_ops |> flatten_nary with
     | [hd] -> hd
     | l -> Concat l
+
+  (* TODO: move this to a normalization stage, because the syntax should be
+   * preserved during parsing (e.g. for -echo command) *)
+  let unary_number = function
+    | Unary ("-", Number (n, u)) -> Number (-.n, u)
+    | Unary ("+", (Number _ as n)) -> n
+    | value -> value
 %}
 
 (* Tokens *)
@@ -260,7 +267,7 @@ expr:
   | COMMA S*            { "," }
 
 term:
-  | op=unary_operator v=numval S*   { Unary (op, v) }
+  | op=unary_operator v=numval S*   { unary_number (Unary (op, v)) }
   | v=numval S*                     { v }
   | str=STRING S*                   { Strlit str }
   | id=IDENT S*                     { Ident id }
