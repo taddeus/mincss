@@ -6,7 +6,6 @@ type args = {
   mutable outfile : string option;
   mutable verbose : int;
   mutable echo : bool;
-  mutable keep_comments : bool;
 }
 
 (* Parse command-line arguments *)
@@ -16,7 +15,6 @@ let parse_args () =
     outfile = None;
     verbose = 1;
     echo = false;
-    keep_comments = false;
   } in
   let args_spec = [
     ("<file> ...", Arg.Rest (fun _ -> ()),
@@ -31,9 +29,6 @@ let parse_args () =
 
     ("--echo", Arg.Unit (fun _ -> args.echo <- true),
              "     Don't minify, just pretty-print the parsed CSS");
-
-    ("--keep-comments", Arg.Unit (fun _ -> args.keep_comments <- true),
-  "\n              Preserve top-level comments");
   ] in
 
   let usage =
