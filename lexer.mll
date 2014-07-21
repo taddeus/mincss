@@ -108,8 +108,10 @@ rule token = parse
   | '@' uagent K E Y F R A M E S  { KEYFRAMES_SYM }
   | '@' S U P P O R T S           { SUPPORTS_SYM }
 
-  | (s | comment)* s A N D s (s | comment)*  { advance_pos lexbuf; WS_AND }
-  | (s | comment)* s O R   s (s | comment)*  { advance_pos lexbuf; WS_OR }
+  | (s | comment)* s comment* A N D comment* s (s | comment)*
+  { advance_pos lexbuf; WS_AND }
+  | (s | comment)* s comment* O R   comment* s (s | comment)*
+  { advance_pos lexbuf; WS_OR }
 
   | O N L Y             { ONLY }
   | N O T               { NOT }
