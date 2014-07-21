@@ -95,6 +95,8 @@ let prerr_loc_msg verbose loc msg =
         with Sys_error _ -> ()
   end
 
+(** AST traversal *)
+
 #define TRAV_ALL(id, constructor) \
   trav_all_##id l = \
     let rec filter_clear = function \
