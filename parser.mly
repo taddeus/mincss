@@ -54,7 +54,7 @@
 %token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
 %token MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
-%token SUPPORTS_AND SUPPORTS_OR
+%token WS_AND WS_OR
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -68,7 +68,7 @@
 %inline wslist(sep, x): S* l=separated_list(sep, terminated(x, S*))  { l }
 %inline wspreceded(prefix, x): p=preceded(ig2(prefix, S*), x) { p }
 
-%inline all_and: AND | SUPPORTS_AND {}
+%inline all_and: AND | WS_AND {}
 
 cd: CDO S* | CDC S* {}
 
@@ -176,10 +176,10 @@ supports_negation:
   | NOT S+ c=supports_condition_in_parens
   { Not c }
 supports_conjunction:
-  | hd=supports_condition_in_parens tl=preceded(SUPPORTS_AND, supports_condition_in_parens)+
+  | hd=supports_condition_in_parens tl=preceded(WS_AND, supports_condition_in_parens)+
   { And (hd :: tl) }
 supports_disjunction:
-  | hd=supports_condition_in_parens tl=preceded(SUPPORTS_OR, supports_condition_in_parens)+
+  | hd=supports_condition_in_parens tl=preceded(WS_OR, supports_condition_in_parens)+
   { Or (hd :: tl) }
 supports_declaration_condition:
   | LPAREN S* decl=supports_declaration RPAREN
