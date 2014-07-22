@@ -239,7 +239,7 @@ pseudo:
   | COLON id=IDENT
   { ":" ^ (String.lowercase id) }
   | COLON f=FUNCTION args=wslist(COMMA, simple_selector) RPAREN
-  { ":" ^ f ^ "(" ^ String.concat "," args ^ ")" }
+  { ":" ^ String.lowercase f ^ "(" ^ String.concat "," args ^ ")" }
 
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))
