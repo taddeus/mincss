@@ -51,11 +51,10 @@ let rec short = function
   | Function ("rgb", Nary (",", [r; g; b])) ->
     Function ("rgb", Nary (",", [clip r; clip g; clip b]))
 
-  | c -> c
+  | v -> v
 
 let transform = function
-  | Declaration ("color", color, imp) ->
-    Declaration ("color", short color, imp)
+  | Expr value -> Expr (short value)
   | v -> v
 
 let compress = Util.transform_stylesheet transform
