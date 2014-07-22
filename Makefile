@@ -25,7 +25,7 @@ all: $(RESULT)
 	ocamlc -c $(OCAMLCFLAGS) -o $@ $<
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package batteries -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
+	ocamlfind ocamlopt -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
 
 $(RESULT): $(addsuffix .cmx,$(ALL_NAMES))
 	ocamlopt -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
