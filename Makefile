@@ -32,7 +32,7 @@ $(RESULT): $(addsuffix .cmx,$(ALL_NAMES))
 
 # intra-module dependencies
 lexer.cmi: lexer.ml
-parser.cmx: parser.cmi lexer.cmi
+parser.cmx: parser.cmi lexer.cmx
 parser.mli: parser.ml
 parse.cmx: lexer.cmi parser.cmx
 main.cmx: parse.cmx util.cmx color.cmx
