@@ -23,20 +23,20 @@ let rec decls_mem name = function
   | (nm, _, false) :: _ when nm = name -> true
   | _ :: tl -> decls_mem name tl
 
-let rec prop_value name = function
+let rec decls_find name = function
   | [] -> raise Not_found
   | (nm, value, false) :: _ when nm = name -> value
-  | _ :: tl -> prop_value name tl
+  | _ :: tl -> decls_find name tl
 
 let order base decls =
   let rec filter = function
     | [] -> []
     | "size" :: tl when base = "font" && decls_mem "line-height" decls ->
-      let font_size = prop_value "font-size" decls in
-      let line_height = prop_value "line-height" decls in
+      let font_size = decls_find "font-size" decls in
+      let line_height = decls_find "line-height" decls in
       Nary ("/", [font_size; line_height]) :: filter tl
     | name :: tl when decls_mem (base ^ "-" ^ name) decls ->
-      prop_value (base ^ "-" ^ name) decls :: filter tl
+      decls_find (base ^ "-" ^ name) decls :: filter tl
     | _ :: tl -> filter tl
   in
   filter (subprops base)
@@ -53,12 +53,12 @@ let rec shorten decls = function
   | ("margin" | "padding") as base when
       let has dir = decls_mem (base ^ "-" ^ dir) decls in
       has "top" && has "right" && has "bottom" && has "left" ->
-    let get dir = prop_value (base ^ "-" ^ dir) decls in
+    let get dir = decls_find (base ^ "-" ^ dir) decls in
     Some (Concat [get "top"; get "right"; get "bottom"; get "left"])
   | _ -> None
 
 let make_shorthands decls =
-  (* find basenames for which properties are present *)
+  (* find shorthand names for which properties are present *)
   let rec find_props = function
     | [] -> SS.empty
     | (name, value, false) :: tl when Str.string_match pattern name 0 ->
