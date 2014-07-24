@@ -23,8 +23,8 @@
     in
     let rec flatten_nary = function
       | [] -> []
-      | Nary (op, Nary (op2, left) :: right) :: tl when op2 = op ->
-        Nary (op, flatten_nary left @ flatten_nary right) :: flatten_nary tl
+      | Nary (op1, Nary (op2, left) :: right) :: tl when op1 = op2 ->
+        flatten_nary (Nary (op1, flatten_nary left @ flatten_nary right) :: tl)
       | hd :: tl -> hd :: flatten_nary tl
     in
     match terms |> transform_ops |> flatten_nary with
