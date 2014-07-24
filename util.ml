@@ -203,9 +203,9 @@ let transform_stylesheet f stylesheet =
     | Namespace (prefix, uri) ->
       let uri = expect_expr uri in
       f (Statement (Namespace (prefix, uri)))
-    | Keyframes (id, rules) ->
+    | Keyframes (prefix, id, rules) ->
       let rules = trav_all_keyframe_ruleset rules in
-      f (Statement (Keyframes (id, rules)))
+      f (Statement (Keyframes (prefix, id, rules)))
     | Supports (condition, statements) ->
       let condition = expect_condition condition in
       let statements = trav_all_statement statements in

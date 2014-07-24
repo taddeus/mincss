@@ -110,11 +110,12 @@ let rec string_of_statement = function
     "@namespace " ^ string_of_expr uri ^ ";"
   | Namespace (Some prefix, uri) ->
     "@namespace " ^ prefix ^ " " ^ string_of_expr uri ^ ";"
-  | Keyframes (id, rules) ->
+  | Keyframes (prefix, id, rules) ->
     let string_of_keyframe_ruleset (expr, decls) =
       string_of_expr expr ^ block (cat "\n" string_of_declaration decls)
     in
-    "@keyframes " ^ id ^ block (cat "\n\n" string_of_keyframe_ruleset rules)
+    "@" ^ prefix ^ "keyframes " ^ id ^
+    block (cat "\n\n" string_of_keyframe_ruleset rules)
   | Supports (condition, statements) ->
     "@supports " ^ stringify_condition " " condition ^
     block (cat "\n\n" string_of_statement statements)
@@ -165,7 +166,8 @@ let rec minify_statement = function
   | Import (target, []) ->
     "@import " ^ string_of_expr target ^ ";"
   | Import (target, queries) ->
-    "@import " ^ string_of_expr target ^ " " ^ cat "," string_of_media_query queries ^ ";"
+    "@import " ^ string_of_expr target ^ " " ^
+    cat "," string_of_media_query queries ^ ";"
   | Page (None, decls) ->
     "@page{" ^ cat ";" minify_declaration decls ^ "}"
   | Page (Some pseudo, decls) ->
@@ -175,11 +177,12 @@ let rec minify_statement = function
       name ^ ":" ^ string_of_expr value
     in
     "@font-face{" ^ cat ";" minify_descriptor_declaration decls ^ "}"
-  | Keyframes (id, rules) ->
+  | Keyframes (prefix, id, rules) ->
     let minify_keyframe_ruleset (expr, decls) =
       minify_expr expr ^ "{" ^ cat ";" minify_declaration decls ^ "}"
     in
-    "@keyframes " ^ id ^ "{" ^ cat "" minify_keyframe_ruleset rules ^ "}"
+    "@" ^ prefix ^ "keyframes " ^ id ^
+    "{" ^ cat "" minify_keyframe_ruleset rules ^ "}"
   | Supports (condition, statements) ->
     "@supports " ^ stringify_condition "" condition ^
     "{" ^ cat "" minify_statement statements ^ "}"

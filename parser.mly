@@ -41,10 +41,10 @@
 
 (* Tokens *)
 %token S CDO CDC IMPORT_SYM PAGE_SYM MEDIA_SYM CHARSET_SYM FONT_FACE_SYM
-%token NAMESPACE_SYM KEYFRAMES_SYM SUPPORTS_SYM IMPORTANT_SYM
+%token NAMESPACE_SYM SUPPORTS_SYM IMPORTANT_SYM
 %token <float> PERCENTAGE NUMBER
 %token <float * string> UNIT_VALUE
-%token <string> COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
+%token <string> KEYFRAMES_SYM COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
 %token MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
 %token WS_AND WS_OR
@@ -141,8 +141,8 @@ descriptor_declaration:
   { (name, value) }
 
 keyframes_rule:
-  | KEYFRAMES_SYM S* id=IDENT S* LBRACE S* rules=keyframe_ruleset* RBRACE S*
-  { Keyframes (id, rules) }
+  | pre=KEYFRAMES_SYM S* id=IDENT S* LBRACE S* rules=keyframe_ruleset* RBRACE S*
+  { Keyframes (pre, id, rules) }
 keyframe_ruleset:
   | selector=keyframe_selector S* decls=decls_block
   { (selector, decls) }

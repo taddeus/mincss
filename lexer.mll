@@ -81,8 +81,6 @@ let X = ['x' 'X']
 let Y = ['y' 'Y']
 let Z = ['z' 'Z']
 
-let uagent = ('-' ("webkit" | "moz"  | "ms" | "o") '-')?
-
 
 rule token = parse
   | "\r\n" | '\r' | '\n'  { new_line lexbuf; S }
@@ -105,8 +103,9 @@ rule token = parse
   | "@charset "                   { CHARSET_SYM }
   | '@' F O N T '-' F A C E       { FONT_FACE_SYM }
   | '@' N A M E S P A C E         { NAMESPACE_SYM }
-  | '@' uagent K E Y F R A M E S  { KEYFRAMES_SYM }
   | '@' S U P P O R T S           { SUPPORTS_SYM }
+  | '@' (('-' ident '-')? as prefix) K E Y F R A M E S
+  { KEYFRAMES_SYM (String.lowercase prefix) }
 
   | (s | comment)* s comment* A N D comment* s (s | comment)*
   { advance_pos lexbuf; WS_AND }

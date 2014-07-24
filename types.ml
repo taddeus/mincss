@@ -46,8 +46,8 @@ type statement =
   (* @font-face { <declarations> } *)
   | Namespace of string option * expr
   (* @namespace [<prefix>] "<uri>"; *)
-  | Keyframes of string * keyframe_ruleset list
-  (* @keyframes <id> { <rulesets> } *)
+  | Keyframes of string * string * keyframe_ruleset list
+  (* @[-<prefix>-]keyframes <id> { <rulesets> } *)
   | Supports of condition * statement list
   (* @supports <condition> { <rulesets> } *)
 
