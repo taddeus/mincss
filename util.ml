@@ -7,6 +7,10 @@ let (|>) a b = b a
 
 (** List utilities *)
 
+let is_none = function None -> true | Some _ -> false
+let is_some = function None -> false | Some _ -> true
+let some_val = function None -> failwith "no value" | Some v -> v
+
 let rec filter_none = function
   | [] -> []
   | None :: tl -> filter_none tl

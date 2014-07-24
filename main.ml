@@ -6,6 +6,7 @@ type args = {
   mutable outfile : string option;
   mutable verbose : int;
   mutable echo : bool;
+  mutable pretty : bool;
 }
 
 (* Parse command-line arguments *)
@@ -15,6 +16,7 @@ let parse_args () =
     outfile = None;
     verbose = 1;
     echo = false;
+    pretty = false;
   } in
   let args_spec = [
     ("<file> ...", Arg.Rest (fun _ -> ()),
@@ -29,10 +31,14 @@ let parse_args () =
 
     ("--echo", Arg.Unit (fun _ -> args.echo <- true),
              "     Don't minify, just pretty-print the parsed CSS");
+
+    ("--pretty", Arg.Unit (fun _ -> args.pretty <- true),
+               "   Minify, but pretty-print the parsed CSS (for debugging)");
   ] in
 
   let usage =
-    "Usage: " ^ Sys.argv.(0) ^ " [-o <file>] [-v <verbosity>] [<file> ...]"
+    "Usage: " ^ Sys.argv.(0) ^ " [-o <file>] [-v <verbosity>] [<file> ...] " ^
+    "[--pretty | --echo]"
   in
 
   Arg.parse args_spec (fun f -> args.infiles <- args.infiles @ [f]) usage;
@@ -68,8 +74,17 @@ let handle_args args =
     write_output (Stringify.string_of_stylesheet stylesheet)
   | _ ->
     let stylesheet = Color.compress stylesheet in
-    let output = Stringify.minify_stylesheet stylesheet in
+    let stylesheet = Shorthand.compress stylesheet in
+
+    let stringify =
+      if args.pretty
+        then Stringify.string_of_stylesheet
+        else Stringify.minify_stylesheet
+    in
+    let output = stringify stylesheet in
+
     write_output output;
+
     if args.verbose >= 2 then begin
       let il = String.length input in
       let ol = String.length output in
