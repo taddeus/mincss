@@ -11,12 +11,13 @@ let pattern = Str.regexp ("^\\(background\\|border\\|font\\|list-style" ^
 
 let subprops = function
   | "background" -> ["color"; "image"; "repeat"; "attachment"; "position"]
-  | "border" -> ["width"; "style"; "color"]
-  | "font" -> ["style"; "variant"; "weight"; "size"; "family"]
+  | "border"     -> ["width"; "style"; "color"]
+  | "font"       -> ["style"; "variant"; "weight"; "size"; "family"]
   | "list-style" -> ["type"; "position"; "image"]
-  | "outline" -> ["color"; "style"; "width"]
-  | "margin" | "padding" -> ["top"; "right"; "bottom"; "left"]
-  | _ -> failwith "not a shorthand property"
+  | "outline"    -> ["color"; "style"; "width"]
+  | "margin"
+  | "padding"    -> ["top"; "right"; "bottom"; "left"]
+  | _            -> failwith "not a shorthand property"
 
 let rec decls_mem name = function
   | [] -> false
@@ -31,30 +32,50 @@ let rec decls_find name = function
 let order base decls =
   let rec filter = function
     | [] -> []
+
+    (* `font-size` and `line-height` are slash-separated in `font` *)
     | "size" :: tl when base = "font" && decls_mem "line-height" decls ->
       let font_size = decls_find "font-size" decls in
       let line_height = decls_find "line-height" decls in
       Nary ("/", [font_size; line_height]) :: filter tl
+
     | name :: tl when decls_mem (base ^ "-" ^ name) decls ->
       decls_find (base ^ "-" ^ name) decls :: filter tl
+
     | _ :: tl -> filter tl
   in
   filter (subprops base)
 
-let rec shorten decls = function
-  | "font" when not (decls_mem "font-size" decls) ->
-    shorten (("font-size", Ident "medium", false) :: decls) "font"
-  | "font" when decls_mem "font-family" decls ->
+let shorten_box_dims = function
+  | [top; right; bottom; left]
+    when top = bottom && right = left && top = right -> [top]
+  | [top; right; bottom; left] when top = bottom && right = left -> [top; right]
+  | [top; right; bottom; left] when right = left -> [top; right; bottom]
+  | dims -> dims
+
+let shorten decls = function
+  (* `font-size` and `font-family` are required for `font` *)
+  | "font" when decls_mem "font-size" decls && decls_mem "font-family" decls ->
     Some (Concat (order "font" decls))
+
+  (* `border-style` is required for `border` *)
   | "border" when decls_mem "border-style" decls ->
     Some (Concat (order "border" decls))
+
+  (* others require at least one property, which is the case when this function
+   * is called *)
   | ("background" | "list-style" | "outline") as base ->
     Some (Concat (order base decls))
+
+  (* margin and padding can only be shorthanded when all directions are known,
+   * merging into even shorter shorthands is done by `shorten_box_dims` *)
   | ("margin" | "padding") as base when
       let has dir = decls_mem (base ^ "-" ^ dir) decls in
       has "top" && has "right" && has "bottom" && has "left" ->
     let get dir = decls_find (base ^ "-" ^ dir) decls in
-    Some (Concat [get "top"; get "right"; get "bottom"; get "left"])
+    Some (Concat (shorten_box_dims [get "top"; get "right";
+                                    get "bottom"; get "left"]))
+
   | _ -> None
 
 let make_shorthands decls =
