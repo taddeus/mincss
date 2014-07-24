@@ -79,7 +79,7 @@ let make_shorthands decls =
   in
   let shorthands = SS.fold replace try_shorthands [] in
 
-  (* filter out the original, partial properties, and prepend the shorthands *)
+  (* filter out the original, partial properties, and append the shorthands *)
   let keep_prop = function
     | (_, _, true) -> true
     | ("line-height", _, false) ->
@@ -90,7 +90,7 @@ let make_shorthands decls =
       let sub = Str.matched_group 2 name in
       not (List.mem sub (subprops base)) || not (decls_mem base shorthands)
   in
-  shorthands @ List.filter keep_prop decls
+  List.filter keep_prop decls @ shorthands
 
 let transform = function
   | Statement (Ruleset (selectors, decls)) ->
