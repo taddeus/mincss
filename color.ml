@@ -13,11 +13,8 @@ let clip = function
   | value -> value
 
 let rec short = function
-  | Ident "aqua"      -> Hexcolor "0ff"
   | Ident "black"     -> Hexcolor "000"
-  | Ident "blue"      -> Hexcolor "00f"
   | Ident "fuchsia"   -> Hexcolor "f0f"
-  | Ident "lime"      -> Hexcolor "0f0"
   | Ident "white"     -> Hexcolor "fff"
   | Ident "yellow"    -> Hexcolor "ff0"
   | Hexcolor "808080" -> Ident "gray"
