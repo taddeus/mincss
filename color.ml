@@ -51,6 +51,10 @@ let rec short = function
   | Function ("rgb", Nary (",", [r; g; b])) ->
     Function ("rgb", Nary (",", [clip r; clip g; clip b]))
 
+  (* rgba(r,g,b,1.0) -> rgb(r,g,b) *)
+  | Function ("rgba", Nary (",", [r; g; b; Number (1., None)])) ->
+    short (Function ("rgb", Nary (",", [r; g; b])))
+
   | v -> v
 
 let transform = function
