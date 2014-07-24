@@ -167,9 +167,9 @@ let rec minify_statement = function
   | Import (target, queries) ->
     "@import " ^ string_of_expr target ^ " " ^ cat "," string_of_media_query queries ^ ";"
   | Page (None, decls) ->
-    "@page{" ^ cat "" minify_declaration decls ^ "}"
+    "@page{" ^ cat ";" minify_declaration decls ^ "}"
   | Page (Some pseudo, decls) ->
-    "@page :" ^ pseudo ^ "{" ^ cat "" minify_declaration decls ^ "}"
+    "@page :" ^ pseudo ^ "{" ^ cat ";" minify_declaration decls ^ "}"
   | Font_face decls ->
     let minify_descriptor_declaration (name, value) =
       name ^ ":" ^ string_of_expr value
