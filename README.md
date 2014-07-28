@@ -69,7 +69,7 @@ number of steps:
 2. Transform shorthand declarations into a separate declaration for each
    expression in the shorthand.
 3. Duplicate rulesets for each of its selectors, so that every ruleset has
-   exactly one block of declarations.
+   exactly one selector.
 4. Create a new declaration block for each property declaration on each
    selector, e.g. `a,p{color:red;border:blue}` becomes `a{color:red}
    a{border:blue} p{color:red} p{border:blue}`.
