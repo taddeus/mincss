@@ -215,3 +215,7 @@ let transform_stylesheet f stylesheet =
   and TRAV_ALL(statement, Statement) in
 
   trav_all_statement stylesheet
+
+(* Expression identification *)
+
+let is_color = Color_names.is_color

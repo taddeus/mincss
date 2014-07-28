@@ -72,3 +72,5 @@ type loc = string * int * int * int * int
 exception Syntax_error of string
 
 exception Loc_error of loc * string
+
+exception Box_error of box * string

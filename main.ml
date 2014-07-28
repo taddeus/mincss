@@ -5,8 +5,9 @@ type args = {
   mutable infiles : string list;
   mutable outfile : string option;
   mutable verbose : int;
-  mutable echo : bool;
-  mutable pretty : bool;
+  mutable echo    : bool;
+  mutable pretty  : bool;
+  mutable unfold  : bool;
 }
 
 (* Parse command-line arguments *)
@@ -17,6 +18,7 @@ let parse_args () =
     verbose = 1;
     echo = false;
     pretty = false;
+    unfold = false;
   } in
   let args_spec = [
     ("<file> ...", Arg.Rest (fun _ -> ()),
@@ -34,6 +36,9 @@ let parse_args () =
 
     ("--pretty", Arg.Unit (fun _ -> args.pretty <- true),
                "   Minify, but pretty-print the parsed CSS (for debugging)");
+
+    ("--unfold", Arg.Unit (fun _ -> args.unfold <- true),
+               "   Only unfold shorthands (for debugging)");
   ] in
 
   let usage =
@@ -72,6 +77,9 @@ let handle_args args =
   match args with
   | {echo = true} ->
     write_output (Stringify.string_of_stylesheet stylesheet)
+  | {unfold = true} ->
+    let stylesheet = Shorthand.unfold_stylesheet stylesheet in
+    write_output (Stringify.string_of_stylesheet stylesheet)
   | _ ->
     let stylesheet = Color.compress stylesheet in
     let stylesheet = Shorthand.compress stylesheet in
@@ -102,8 +110,10 @@ let main () =
     with
     | Loc_error (loc, msg) ->
       Util.prerr_loc_msg (args.verbose >= 1) loc ("Error: " ^ msg);
-    | Failure err ->
-      prerr_endline ("Error: " ^ err);
+    | Box_error (box, msg) ->
+      prerr_endline ("Error: " ^ msg ^ ": " ^ Stringify.string_of_box box);
+    | Failure msg ->
+      prerr_endline ("Error: " ^ msg);
   end;
   exit 1
 

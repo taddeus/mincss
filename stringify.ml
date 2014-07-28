@@ -46,12 +46,12 @@ let rec string_of_selector = function
   | Combinator (left, com, right) ->
     string_of_selector left ^ " " ^ com ^ " " ^ string_of_selector right
 
-let string_of_media_feature = function
+let string_of_media_expr = function
   | (feature, None) -> "(" ^ feature ^ ")"
   | (feature, Some value) -> "(" ^ feature ^ ": " ^ string_of_expr value ^ ")"
 
 let string_of_media_query =
-  let features_str = cat " and " string_of_media_feature in
+  let features_str = cat " and " string_of_media_expr in
   function
   | (None, None, []) -> ""
   | (None, Some mtype, []) -> mtype
@@ -82,7 +82,15 @@ let stringify_condition w c =
   in
   str (transform c)
 
+let string_of_condition = stringify_condition " "
+
 let block = function "" -> " {}" | body -> " {\n" ^ indent body ^ "\n}"
+
+let string_of_descriptor_declaration (name, value) =
+  name ^ ": " ^ string_of_expr value ^ ";"
+
+let string_of_keyframe_ruleset (expr, decls) =
+  string_of_expr expr ^ block (cat "\n" string_of_declaration decls)
 
 let rec string_of_statement = function
   | Ruleset (selectors, decls) ->
@@ -102,22 +110,16 @@ let rec string_of_statement = function
   | Page (Some pseudo, decls) ->
     "@page :" ^ pseudo ^ block (cat "\n" string_of_declaration decls)
   | Font_face decls ->
-    let string_of_descriptor_declaration (name, value) =
-      name ^ ": " ^ string_of_expr value ^ ";"
-    in
     "@font-face" ^ block (cat "\n" string_of_descriptor_declaration decls)
   | Namespace (None, uri) ->
     "@namespace " ^ string_of_expr uri ^ ";"
   | Namespace (Some prefix, uri) ->
     "@namespace " ^ prefix ^ " " ^ string_of_expr uri ^ ";"
   | Keyframes (prefix, id, rules) ->
-    let string_of_keyframe_ruleset (expr, decls) =
-      string_of_expr expr ^ block (cat "\n" string_of_declaration decls)
-    in
     "@" ^ prefix ^ "keyframes " ^ id ^
     block (cat "\n\n" string_of_keyframe_ruleset rules)
   | Supports (condition, statements) ->
-    "@supports " ^ stringify_condition " " condition ^
+    "@supports " ^ string_of_condition condition ^
     block (cat "\n\n" string_of_statement statements)
 
 let string_of_stylesheet = cat "\n\n" string_of_statement
@@ -189,3 +191,33 @@ let rec minify_statement = function
   | statement -> string_of_statement statement
 
 let minify_stylesheet = cat "" minify_statement
+
+(*
+ * Stringify any AST node in a box
+ *)
+
+let string_of_box = function
+  | Expr expr ->
+    string_of_expr expr
+  | Declaration declaration ->
+    string_of_declaration declaration
+  | Selector selector ->
+    string_of_selector selector
+  | Media_expr media_expr ->
+    string_of_media_expr media_expr
+  | Media_query media_query ->
+    string_of_media_query media_query
+  | Descriptor_declaration descriptor_declaration ->
+    string_of_descriptor_declaration descriptor_declaration
+  | Keyframe_ruleset keyframe_ruleset ->
+    string_of_keyframe_ruleset keyframe_ruleset
+  | Condition condition ->
+    string_of_condition condition
+  | Statement statement ->
+    string_of_statement statement
+  | Stylesheet stylesheet ->
+    string_of_stylesheet stylesheet
+  | Clear ->
+    "<clear>"
+  | _ ->
+    raise (Invalid_argument "box")

@@ -13,21 +13,6 @@ let clip = function
   | value -> value
 
 let rec short = function
-  | Ident "black"     -> Hexcolor "000"
-  | Ident "fuchsia"   -> Hexcolor "f0f"
-  | Ident "white"     -> Hexcolor "fff"
-  | Ident "yellow"    -> Hexcolor "ff0"
-  | Hexcolor "808080" -> Ident "gray"
-  | Hexcolor "008000" -> Ident "green"
-  | Hexcolor "800000" -> Ident "maroon"
-  | Hexcolor "000080" -> Ident "navy"
-  | Hexcolor "8080000"-> Ident "olive"
-  | Hexcolor "800080" -> Ident "purple"
-  | Hexcolor "ff0000"
-  | Hexcolor "f00"    -> Ident "red"
-  | Hexcolor "c0c0c0" -> Ident "silver"
-  | Hexcolor "008080" -> Ident "teal"
-
   (* #aabbcc -> #abc *)
   | Hexcolor h when Str.string_match hex6 h 0 ->
     let gr n = Str.matched_group n h in
@@ -52,7 +37,10 @@ let rec short = function
   | Function ("rgba", Nary (",", [r; g; b; Number (1., None)])) ->
     short (Function ("rgb", Nary (",", [r; g; b])))
 
-  | v -> v
+  (* TODO: hsl[a](...) *)
+
+  (* transform color names to shorter hex codes and vice-versa *)
+  | v -> Color_names.compress v
 
 let transform = function
   | Expr value -> Expr (short value)
