@@ -61,47 +61,28 @@ Compression phases
 ==================
 
 To achieve the features listed above, the input stylesheet is rewritten in a
-number of phases:
+number of steps:
 
-1. `parse`: Transform the input into an Abstract Syntax Tree (AST) in
-   accordance with the CSS syntax definition. This eliminates unnecessary
-   whitespaces and catches syntax errors.
-2. `unfold`:
-   - Transform shorthand declarations into a separate declaration for each
-     expression in the shorthand.
-   - Duplicate rulesets for each of its selectors, so that every ruleset has
-     exactly one block of declarations.
-3. `concat`: Concatenate different declaration blocks for the same selector.
-   Now, every selector has exacly one block of declarations associated with it.
-4. `optimize`: Optimize individual declaration blocks by generating shorthand
-   declarations and simple compression on expressions (color compression,
-   removal of unnecessary string quotes, etc.).
-5. `combine`: Try to combine declarations for different selectors, by comparing
-   each pair of rulesets and checking if a shorter representation is possible
-   by generating a shared ruleset.
-
-Motivation
-----------
-
-The use of a proper CSS syntax definition for the parser, rather than a simple
-ad-hoc tokenizer, assures that all unnecessary whitespace is ignored. The AST
-definition also provides a convenient infrastructure for the subsequent
-transformations.
-
-The unfolding phase eliminates any clever constructions used by the programmer,
-so that the following phases can make assumptions about the format of the
-stylesheet and need not deal with, for example, shorthand declarations.
-
-Concatenation of declaration blocks for the same selector is necessary in order
-to generate a single minimal representation for each selector in the `optimize`
-phase.
-
-The `combine` phase is tricky to implement, since it is difficult to prove if
-the resulting combinations are in fact the shortest possible representation of
-the stylesheet. If this is not the case, the risk exists that while the
-programmer efficiently merged some declarations for different selectors, the
-compressor unfolds the ruleset and generates somethning longer.
-*FIXME*: how do we solve this?
+1. Parse the input CSS, producing an Abstract Syntax Tree (AST) in accordance
+   with the CSS syntax definition. This eliminates unnecessary whitespaces and
+   catches syntax errors.
+2. Transform shorthand declarations into a separate declaration for each
+   expression in the shorthand.
+3. Duplicate rulesets for each of its selectors, so that every ruleset has
+   exactly one block of declarations.
+4. Create a new declaration block for each property declaration on each
+   selector, e.g. `a,p{color:red;border:blue}` becomes `a{color:red}
+   a{border:blue} p{color:red} p{border:blue}`.
+5. Prune duplicate declarations (when the same property is overwritten for the
+   same selector). Note: this may be disabled with `--no-prune` for stylesheets
+   that contain duplication hacks.
+6. Combine selectors for identical blocks (as long as the correct order of
+   declarations is preserved).
+7. Concatenate blocks for identical (combinations of) selectors.
+8. Optimize individual declaration blocks by generating shorthand declarations
+   and simple compression on expressions (i.e. color compression, removal of
+   unnecessary string quotes, etc.).
+9. Output the resulting AST with minimal whitespace.
 
 
 Building mincss
