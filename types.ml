@@ -12,8 +12,20 @@ type expr =
 type declaration = string * expr * bool
 
 type selector =
+  | No_element
+  | All_elements
+  | Element of string
+  | Id of selector * string
+  | Class of selector * string
+  | Pseudo of selector * string * selector list option
+  | Attribute of selector * string * (string * expr) option
+  | Combinator of selector * string * selector
+
+  (*
+type selector =
   | Simple of string
   | Combinator of selector * string * selector
+  *)
 
 type media_expr = string * expr option
 type media_query = string option * string option * media_expr list

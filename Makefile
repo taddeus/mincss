@@ -1,6 +1,7 @@
 RESULT    := mincss
 PRE_TGTS  := types
-MODULES   := color_names util stringify parser lexer parse color shorthand main
+MODULES   := color_names util stringify parser lexer parse color \
+             shorthand main
 ALL_NAMES := $(PRE_TGTS) $(MODULES)
 
 OCAMLCFLAGS  := -g

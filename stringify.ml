@@ -39,12 +39,30 @@ let string_of_declaration (name, value, important) =
   let imp = if important then " !important" else "" in
   name ^ ": " ^ string_of_expr value ^ imp ^ ";"
 
-let rec string_of_selector = function
-  | Simple simple -> simple
+let rec stringify_selector w selector =
+  let str = stringify_selector w in
+  match selector with
+  | No_element   -> ""
+  | All_elements -> "*"
+  | Element elem -> elem
+  | Id (base, id) ->
+    str base ^ "#" ^ id
+  | Class (base, cls) ->
+    str base ^ "." ^ cls
+  | Attribute (base, attr, None) ->
+    str base ^ "[" ^ attr ^ "]"
+  | Attribute (base, attr, Some (op, value)) ->
+    str base ^ "[" ^ attr ^ w ^ op ^ w ^ string_of_expr value ^ "]"
+  | Pseudo (base, sel, None) ->
+    str base ^ ":" ^ sel
+  | Pseudo (base, fn, Some args) ->
+    str base ^ ":" ^ fn ^ "(" ^ cat ("," ^ w) str args ^ ")"
   | Combinator (left, " ", right) ->
-    string_of_selector left ^ " " ^ string_of_selector right
+    str left ^ " " ^ str right
   | Combinator (left, com, right) ->
-    string_of_selector left ^ " " ^ com ^ " " ^ string_of_selector right
+    str left ^ w ^ com ^ w ^ str right
+
+let string_of_selector = stringify_selector " "
 
 let string_of_media_expr = function
   | (feature, None) -> "(" ^ feature ^ ")"
@@ -140,10 +158,7 @@ let minify_declaration (name, value, important) =
   let imp = if important then "!important" else "" in
   name ^ ":" ^ minify_expr value ^ imp
 
-let rec minify_selector = function
-  | Simple simple -> simple
-  | Combinator (left, com, right) ->
-    minify_selector left ^ com ^ minify_selector right
+let rec minify_selector = stringify_selector ""
 
 let minify_media_feature = function
   | (feature, None) -> "(" ^ feature ^ ")"

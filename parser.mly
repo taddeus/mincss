@@ -37,6 +37,18 @@
     | Unary ("-", Number (n, u)) -> Number (-.n, u)
     | Unary ("+", (Number _ as n)) -> n
     | value -> value
+
+  let rec append_addons base = function
+    | [] ->
+      base
+    | `Id id :: tl ->
+      append_addons (Id (base, id)) tl
+    | `Class cls :: tl ->
+      append_addons (Class (base, cls)) tl
+    | `Attribute (attr, value) :: tl ->
+      append_addons (Attribute (base, attr, value)) tl
+    | `Pseudo (f, args) :: tl ->
+      append_addons (Pseudo (base, f, args)) tl
 %}
 
 (* Tokens *)
@@ -207,39 +219,44 @@ ruleset:
 
 selector:
   | simple=simple_selector S*
-  { Simple simple }
+  { simple }
   | left=simple_selector S+ right=selector
-  { Combinator (Simple left, " ", right) }
+  { Combinator (left, " ", right) }
   | left=simple_selector S* com=combinator right=selector
-  { Combinator (Simple left, com, right) }
+  { Combinator (left, com, right) }
 %inline combinator:
   | PLUS S*          { "+" }
   | c=COMBINATOR S*  { c }
 
 simple_selector:
   | elem=element_name addons=element_addon*
-  { elem ^ String.concat "" addons }
+  { append_addons elem addons }
   | addons=element_addon+
-  { String.concat "" addons }
-%inline element_addon: a=HASH | a=cls | a=attrib | a=pseudo { a }
+  { append_addons No_element addons }
+%inline element_addon:
+  | id=HASH       { `Id id }
+  | addon=cls
+  | addon=attrib
+  | addon=pseudo  { addon }
 element_name:
-  | tag=IDENT  { String.lowercase tag }
-  | STAR       { "*" }
+  | tag=IDENT  { Element (String.lowercase tag) }
+  | STAR       { All_elements }
 cls:
   | DOT name=IDENT
-  { "." ^ name }
+  { `Class name }
 attrib:
-  | LBRACK S* left=IDENT S* right=pair(RELATION, rel_value)? RBRACK
-  { let right = match right with None -> "" | Some (op, term) -> op ^ term in
-    "[" ^ String.lowercase left ^ right ^ "]" }
+  | LBRACK S* left=IDENT S* RBRACK
+  { `Attribute (String.lowercase left, None) }
+  | LBRACK S* left=IDENT S* op=RELATION right=rel_value RBRACK
+  { `Attribute (String.lowercase left, Some (op, right)) }
 %inline rel_value:
-  | S* id=IDENT S*  { id }
-  | S* s=STRING S*  { "\"" ^ s ^ "\"" }
+  | S* id=IDENT S*  { Ident id }
+  | S* s=STRING S*  { Strlit s }
 pseudo:
   | COLON id=IDENT
-  { ":" ^ (String.lowercase id) }
+  { `Pseudo (String.lowercase id, None) }
   | COLON f=FUNCTION args=wslist(COMMA, simple_selector) RPAREN
-  { ":" ^ String.lowercase f ^ "(" ^ String.concat "," args ^ ")" }
+  { `Pseudo (String.lowercase f, Some args) }
 
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))

@@ -132,12 +132,26 @@ let transform_stylesheet f stylesheet =
   in
   let TRAV_ALL(declaration, Declaration) in
 
-  let trav_selector = function
-    | Simple _ as s -> f (Selector s)
+  let rec trav_selector = function
+    | (No_element | All_elements | Element _) as elem ->
+      f (Selector elem)
+    | Id (base, id) ->
+      f (Selector (Id (expect_selector base, id)))
+    | Class (base, cls) ->
+      f (Selector (Class (expect_selector base, cls)))
+    | Attribute (base, attr, value) ->
+      f (Selector (Attribute (expect_selector base, attr, value)))
+    | Pseudo (base, sel, None) ->
+      f (Selector (Pseudo (expect_selector base, sel, None)))
+    | Pseudo (base, fn, Some args) ->
+      let args = trav_all_selector args in
+      f (Selector (Pseudo (expect_selector base, fn, Some args)))
     | Combinator (left, com, right) ->
+      let left = expect_selector left in
+      let right = expect_selector right in
       f (Selector (Combinator (left, com, right)))
-  in
-  let TRAV_ALL(selector, Selector) in
+  and EXPECT(selector, Selector)
+  and TRAV_ALL(selector, Selector) in
 
   let trav_media_expr = function
     | (_, None) as value ->
