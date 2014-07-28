@@ -1,6 +1,6 @@
 RESULT    := mincss
 PRE_TGTS  := types
-MODULES   := color_names util stringify parser lexer parse color \
+MODULES   := color_names util stringify parser lexer parse selector color \
              shorthand main
 ALL_NAMES := $(PRE_TGTS) $(MODULES)
 
