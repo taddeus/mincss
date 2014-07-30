@@ -78,26 +78,24 @@ let prerr_loc (fname, ystart, yend, xstart, xend) =
     end
   done
 
-let prerr_loc_msg verbose loc msg =
-  if verbose then begin
-    let (fname, ystart, yend, xstart, xend) = loc in
-    if loc != noloc then begin
-      let line_s = if yend != ystart
-        then sprintf "lines %d-%d" ystart yend
-        else sprintf "line %d" ystart
-      in
-      let char_s = if xend != xstart || yend != ystart
-        then sprintf "characters %d-%d" xstart xend
-        else sprintf "character %d" xstart
-      in
-      eprintf "File \"%s\", %s, %s:\n" fname line_s char_s;
-    end;
-    eprintf "%s\n" msg;
+let prerr_loc_msg loc msg =
+  let (fname, ystart, yend, xstart, xend) = loc in
+  if loc != noloc then begin
+    let line_s = if yend != ystart
+      then sprintf "lines %d-%d" ystart yend
+      else sprintf "line %d" ystart
+    in
+    let char_s = if xend != xstart || yend != ystart
+      then sprintf "characters %d-%d" xstart xend
+      else sprintf "character %d" xstart
+    in
+    eprintf "File \"%s\", %s, %s:\n" fname line_s char_s;
+  end;
+  eprintf "%s\n" msg;
 
-    if verbose && loc != noloc then
-        try prerr_loc loc
-        with Sys_error _ -> ()
-  end
+  if loc != noloc then
+    try prerr_loc loc
+    with Sys_error _ -> ()
 
 (** AST traversal *)
 

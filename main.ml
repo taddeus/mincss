@@ -4,10 +4,10 @@ open Types
 type args = {
   mutable infiles : string list;
   mutable outfile : string option;
-  mutable verbose : int;
-  mutable echo    : bool;
-  mutable pretty  : bool;
+  mutable verbose : bool;
+  mutable prune   : bool;
   mutable unfold  : bool;
+  mutable upto    : int option;
 }
 
 (* Parse command-line arguments *)
@@ -15,35 +15,46 @@ let parse_args () =
   let args = {
     infiles = [];
     outfile = None;
-    verbose = 1;
-    echo = false;
-    pretty = false;
-    unfold = false;
+    verbose = false;
+    prune = true;
+    unfold = true;
+    upto = None;
   } in
+
   let args_spec = [
     ("<file> ...", Arg.Rest (fun _ -> ()),
-                 " Optional input files (default is to read from stdin)");
+                 "   Input files (default is to read from stdin)");
 
     ("-o", Arg.String (fun s -> args.outfile <- Some s),
-         "<file>   Output file (defaults to stdout)");
+         "<file>     Output file (defaults to stdout)");
 
-    ("-v", Arg.Int (fun i -> args.verbose <- i),
-         "<num>    Set verbosity (0: nothing, 1: errors (default), \
-          2: compression rate, 3: debug)");
+    ("-v", Arg.Unit (fun _ -> args.verbose <- true),
+         "           Verbose mode: show compression rate");
 
-    ("--echo", Arg.Unit (fun _ -> args.echo <- true),
-             "     Don't minify, just pretty-print the parsed CSS");
+    ("-no-prune", Arg.Unit (fun _ -> args.prune <- false),
+                "    Don't prune duplicate properties (skip step 5 below)");
 
-    ("--pretty", Arg.Unit (fun _ -> args.pretty <- true),
-               "   Minify, but pretty-print the parsed CSS (for debugging)");
+    ("-no-unfold", Arg.Unit (fun _ -> args.unfold <- false),
+                 "   Only minify whitespace, colors and shorthands \
+                     (skip steps 2-7 below)");
 
-    ("--unfold", Arg.Unit (fun _ -> args.unfold <- true),
-               "   Only unfold shorthands (for debugging)");
+    ("-upto", Arg.Int (fun i -> args.upto <- Some i),
+            "<step>  Stop after the specified step (for debugging): \
+                                              \n                \
+                     1: parse                 \n                \
+                     2: unfold shorthands     \n                \
+                     3: unfold selectors      \n                \
+                     4: unfold blocks         \n                \
+                     5: prune duplicates      \n                \
+                     6: combine selectors     \n                \
+                     7: concatenate blocks    \n                \
+                     8: optimize blocks       \n                \
+                     9: minify");
   ] in
 
   let usage =
-    "Usage: " ^ Sys.argv.(0) ^ " [-o <file>] [-v <verbosity>] [<file> ...] " ^
-    "[--pretty | --echo]"
+    "Usage: " ^ Sys.argv.(0) ^ " [-o <file>] [-v] [-no-prune] [-upto <step>] \
+                                 [<file> ...] "
   in
 
   Arg.parse args_spec (fun f -> args.infiles <- args.infiles @ [f]) usage;
@@ -65,7 +76,20 @@ let parse_files = function
     (String.concat "" inputs, List.concat stylesheets)
 
 let handle_args args =
-  let input, stylesheet = parse_files args.infiles in
+  let steps =
+    (*let switch flag fn = if flag then fn else fun s -> s in*)
+    [
+      (*
+      switch args.unfold Unfold.unfold_shorthands;
+      switch args.unfold Unfold.unfold_selectors;
+      switch args.unfold Unfold.unfold_blocks;
+      switch (args.unfold && args.prune) Unfold.prune_duplicates;
+      switch args.unfold Combine.combine_selectors;
+      switch args.unfold Concat.concat_blocks;
+      Optimize.optimize_blocks;
+      *)
+    ]
+  in
 
   let write_output =
     match args.outfile with
@@ -74,42 +98,41 @@ let handle_args args =
       fun css -> let f = open_out name in output_string f css; close_out f
   in
 
-  match args with
-  | {echo = true} ->
-    write_output (Stringify.string_of_stylesheet stylesheet)
-  | {unfold = true} ->
-    let stylesheet = Shorthand.unfold_stylesheet stylesheet in
-    write_output (Stringify.string_of_stylesheet stylesheet)
-  | _ ->
-    let stylesheet = Color.compress stylesheet in
-    let stylesheet = Shorthand.compress stylesheet in
+  let upto = match args.upto with Some i -> i | None -> 0 in
 
-    let stringify =
-      if args.pretty
-        then Stringify.string_of_stylesheet
-        else Stringify.minify_stylesheet
-    in
-    let output = stringify stylesheet in
+  let input, stylesheet = parse_files args.infiles in
 
-    write_output output;
+  let rec do_steps i stylesheet = function
+    | _ when i = upto ->
+      write_output (Stringify.string_of_stylesheet stylesheet)
 
-    if args.verbose >= 2 then begin
-      let il = String.length input in
-      let ol = String.length output in
-      Printf.fprintf stderr "compression: %d -> %d bytes (%d%% of original)\n"
-      il ol (int_of_float (float_of_int ol /. float_of_int il *. 100.))
-    end
+    | [] ->
+      let output = Stringify.minify_stylesheet stylesheet in
+      write_output output;
+
+      if args.verbose then begin
+        let il = String.length input in
+        let ol = String.length output in
+        Printf.fprintf stderr "compression: %d -> %d bytes (%d%% of original)\n"
+        il ol (int_of_float (float_of_int ol /. float_of_int il *. 100.))
+      end
+
+    | step :: tl ->
+      do_steps (i + 1) (step stylesheet) tl
+  in
+
+  do_steps 1 stylesheet steps
+
 
 (* Main function, returns exit status *)
 let main () =
-  let args = parse_args () in
   begin
     try
-      handle_args args;
+      handle_args (parse_args ());
       exit 0
     with
     | Loc_error (loc, msg) ->
-      Util.prerr_loc_msg (args.verbose >= 1) loc ("Error: " ^ msg);
+      Util.prerr_loc_msg loc ("Error: " ^ msg);
     | Box_error (box, msg) ->
       prerr_endline ("Error: " ^ msg ^ ": " ^ Stringify.string_of_box box);
     | Failure msg ->
