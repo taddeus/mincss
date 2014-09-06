@@ -7,9 +7,9 @@ let is_num = function
   | _ -> false
 
 let clip = function
-  | Number (n, (None | Some "%")) when n < 0. -> Number (0., Some "%")
-  | Number (n, None) when n > 255.            -> Number (255., None)
-  | Number (n, Some "%") when n > 100.        -> Number (100., Some "%")
+  | Number (n, u) when n < 0.          -> Number (0., u)
+  | Number (n, None) when n > 255.     -> Number (255., None)
+  | Number (n, Some "%") when n > 100. -> Number (100., Some "%")
   | value -> value
 
 let rec short = function
