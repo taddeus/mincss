@@ -10,7 +10,8 @@ let pattern = Str.regexp ("^\\(background\\|border\\|font\\|list-style" ^
                           "\\|outline\\|padding\\|margin\\)-\\(.*\\)$")
 
 let order = function
-  | "background" -> ["color"; "image"; "repeat"; "attachment"; "position"]
+  | "background" -> ["color"; "image"; "repeat"; "attachment"; "position-x";
+                     "position-y"]
   | "border"     -> ["width"; "style"; "color"]
   | "font"       -> ["style"; "variant"; "weight"; "size"; "family"]
   | "list-style" -> ["type"; "position"; "image"]
