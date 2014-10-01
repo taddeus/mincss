@@ -231,3 +231,19 @@ let transform_stylesheet f stylesheet =
 (* Expression identification *)
 
 let is_color = Color_names.is_color
+
+(* Sorting declarations *)
+
+let sort_stylesheet =
+  let transform_sort_decls = function
+    | Statement (Ruleset (selectors, decls)) ->
+      let pattern = Str.regexp "^\\([^-]+\\)-" in
+      let stem x =
+        if Str.string_match pattern x 0 then Str.matched_group 1 x else x
+      in
+      let cmp (a, _, _) (b, _, _) = String.compare (stem a) (stem b) in
+      Statement (Ruleset (selectors, List.stable_sort cmp decls))
+    | v -> v
+  in
+  transform_stylesheet transform_sort_decls
+

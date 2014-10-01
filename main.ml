@@ -10,6 +10,7 @@ type args = {
   shorthands : bool;
   duplicates : bool;
   echo       : bool;
+  sort       : bool;
 }
 
 let parse_args () =
@@ -31,7 +32,11 @@ let parse_args () =
      -d, --duplicates  Prune duplicate properties (WARNING: may affect \
                        cross-browser hacks)\n \
      -p, --pretty      Shorthand for -c -s -d\n \
-     -e, --echo        Just parse and pretty-print, no optimizations\n"
+     -e, --echo        Just parse and pretty-print, no optimizations\n\
+     \n\
+     Formatting options:
+     --sort            Sort declarations in each selector group\n\
+     "
   in
 
   let default_args = {
@@ -43,6 +48,7 @@ let parse_args () =
     shorthands = false;
     duplicates = false;
     echo       = false;
+    sort       = false;
   } in
 
   let rec handle args = function
@@ -60,6 +66,8 @@ let parse_args () =
       handle {args with simple = true; shorthands = true; duplicates = true} tl
     | ("-e" | "--echo") :: tl ->
       handle {args with echo = true} tl
+    | "--sort" :: tl ->
+      handle {args with sort = true} tl
 
     | ("-h" | "--help") :: tl ->
       prerr_string usage;
@@ -83,17 +91,24 @@ let parse_args () =
   in
 
   match handle default_args (List.tl (Array.to_list Sys.argv)) with
+  | { echo = true; _ } as args ->
+    { args with
+      whitespace = false;
+      simple     = false;
+      shorthands = false;
+      duplicates = false }
+
   | { whitespace = false;
       simple     = false;
       shorthands = false;
       duplicates = false;
-      echo       = false;
       _ } as args ->
     { args with
       whitespace = true;
       simple     = true;
       shorthands = true;
       duplicates = true }
+
   | args -> args
 
 let parse_files = function
@@ -131,6 +146,7 @@ let handle_args args =
     |> switch args.simple Simple.compress
     |> switch args.duplicates Duplicates.compress
     |> switch args.shorthands Shorthand.compress
+    |> switch args.sort Util.sort_stylesheet
   in
   let output =
     if args.whitespace
