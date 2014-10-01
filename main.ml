@@ -131,11 +131,11 @@ let handle_args args =
   let input, css = parse_files args.infiles in
   let css = css
     |> switch args.color Color.compress
-    (*|> switch args.font Font.compress*)
 
     (* unfold before pruning duplicates so that shorthand components are
      * correctly pruned *)
     |> switch args.shorthands Shorthand.unfold_stylesheet
+    |> switch args.font Font.compress
     |> switch args.duplicates Duplicates.compress
     |> switch args.shorthands Shorthand.compress
   in

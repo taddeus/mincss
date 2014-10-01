@@ -1,7 +1,7 @@
 RESULT    := mincss
 PRE_TGTS  := types
 MODULES   := color_names util stringify parser lexer parse selector color \
-             shorthand duplicates main
+             shorthand duplicates font main
 ALL_NAMES := $(PRE_TGTS) $(MODULES)
 
 OCAMLCFLAGS  := -g
@@ -36,7 +36,7 @@ lexer.cmi: lexer.ml
 parser.cmx: parser.cmi lexer.cmx
 parser.mli: parser.ml
 parse.cmx: lexer.cmi parser.cmx
-main.cmx: parse.cmx util.cmx color.cmx shorthand.cmx duplicates.cmx
+main.cmx: parse.cmx util.cmx color.cmx shorthand.cmx duplicates.cmx font.cmx
 util.cmx: OCAMLCFLAGS += -pp cpp
 util.cmx color.cmx: color_names.cmx
 stringify.cmx parser.cmx color.cmx shorthand.cmx: util.cmi
