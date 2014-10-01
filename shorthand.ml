@@ -10,7 +10,8 @@ let pattern = Str.regexp ("^\\(background\\|border\\|font\\|list-style" ^
                           "\\|outline\\|padding\\|margin\\)-\\(.*\\)$")
 
 let order = function
-  | "background" -> ["color"; "image"; "repeat"; "attachment"; "position"]
+  | "background" -> ["color"; "image"; "repeat"; "attachment"; "position-x";
+                     "position-y"]
   | "border"     -> ["width"; "style"; "color"]
   | "font"       -> ["style"; "variant"; "weight"; "size"; "family"]
   | "list-style" -> ["type"; "position"; "image"]
@@ -27,13 +28,17 @@ let rec decls_mem name = function
 (* find the value of the last declaration of some property (since the earlier
  * values are overridden), unless an earlier !important value was found *)
 let decls_find name decls =
-  let rec wrap known = function
-    | [] -> known
-    | (nm, value, true) :: _ when nm = name -> Some value
-    | (nm, value, false) :: tl when nm = name -> wrap (Some value) tl
-    | _ :: tl -> wrap known tl
+  let rec wrap known must_be_imp = function
+    | [] ->
+      known
+    | (nm, value, false) :: tl when nm = name && not must_be_imp ->
+      wrap (Some value) false tl
+    | (nm, value, true) :: tl when nm = name ->
+      wrap (Some value) true tl
+    | _ :: tl ->
+      wrap known must_be_imp tl
   in
-  match wrap None decls with
+  match wrap None false decls with
   | None -> raise Not_found
   | Some value -> value
 
@@ -232,7 +237,8 @@ let rec unfold = function
 let make_shorthands decls =
   (* unfold currently existing shorthands into separate properties for merging
    * with override properties that are defined later on *)
-  let decls = unfold decls in
+  (*let decls = unfold decls in
+    XXX: done by main function for correct pruning of duplicate declarations*)
 
   (* find shorthand names for which properties are present *)
   let rec find_props = function
@@ -259,7 +265,8 @@ let make_shorthands decls =
   let keep_prop = function
     | ("line-height", _, _) ->
       not (decls_mem "font" shorthands)
-    | (name, _, _) ->
+    | (name, _, imp) ->
+      imp ||
       not (Str.string_match pattern name 0) ||
       let base = Str.matched_group 1 name in
       let sub = Str.matched_group 2 name in
