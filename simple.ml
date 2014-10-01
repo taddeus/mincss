@@ -12,7 +12,7 @@ let clip = function
   | Number (n, Some "%") when n > 100.        -> Number (100., Some "%")
   | value -> value
 
-let rec short = function
+let rec shorten_expr = function
   (* #aabbcc -> #abc *)
   | Hexcolor h when Str.string_match hex6 h 0 ->
     let gr n = Str.matched_group n h in
@@ -27,7 +27,7 @@ let rec short = function
       | Number (n, Some "%") -> int_of_float (n *. 2.55 +. 0.5)
       | _ -> assert false
     in
-    short (Hexcolor (Printf.sprintf "%02x%02x%02x" (i r) (i g) (i b)))
+    shorten_expr (Hexcolor (Printf.sprintf "%02x%02x%02x" (i r) (i g) (i b)))
 
   (* clip rgb values, e.g. rgb(-1,256,0) -> rgb(0,255,0) *)
   | Function ("rgb", Nary (",", [r; g; b])) ->
@@ -35,15 +35,22 @@ let rec short = function
 
   (* rgba(r,g,b,1.0) -> rgb(r,g,b) *)
   | Function ("rgba", Nary (",", [r; g; b; Number (1., None)])) ->
-    short (Function ("rgb", Nary (",", [r; g; b])))
+    shorten_expr (Function ("rgb", Nary (",", [r; g; b])))
 
   (* TODO: hsl[a](...) *)
 
   (* transform color names to shorter hex codes and vice-versa *)
   | v -> Color_names.compress v
 
+let shorten_font_weight = function
+  | Ident "normal" -> Number (400.0, None)
+  | Ident "bold"   -> Number (700.0, None)
+  | v -> v
+
 let transform = function
-  | Expr value -> Expr (short value)
+  | Expr value -> Expr (shorten_expr value)
+  | Declaration ("font-weight", value, imp) ->
+    Declaration ("font-weight", shorten_font_weight value, imp)
   | v -> v
 
 let compress = Util.transform_stylesheet transform

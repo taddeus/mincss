@@ -6,8 +6,7 @@ type args = {
   outfile    : string option;
   verbose    : bool;
   whitespace : bool;
-  color      : bool;
-  font       : bool;
+  simple     : bool;
   shorthands : bool;
   duplicates : bool;
   echo       : bool;
@@ -27,12 +26,11 @@ let parse_args () =
      Optimization flags (if none are specified, all are enabled):\n \
      -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest \
                        effect, omit for pretty-printing)\n \
-     -c, --color       Shorten colors\n \
-     -f, --font        Shorten font weights\n \
+     -c, --simple      Shorten colors and font weights\n \
      -s, --shorthands  Generate shorthand properties\n \
      -d, --duplicates  Prune duplicate properties (WARNING: may affect \
                        cross-browser hacks)\n \
-     -p, --pretty      Shorthand for -c -f -s -d\n \
+     -p, --pretty      Shorthand for -c -s -d\n \
      -e, --echo        Just parse and pretty-print, no optimizations\n"
   in
 
@@ -41,8 +39,7 @@ let parse_args () =
     outfile    = None;
     verbose    = false;
     whitespace = false;
-    color      = false;
-    font       = false;
+    simple     = false;
     shorthands = false;
     duplicates = false;
     echo       = false;
@@ -53,16 +50,14 @@ let parse_args () =
       handle {args with verbose = true} tl
     | ("-w" | "--whitespace") :: tl ->
       handle {args with whitespace = true} tl
-    | ("-c" | "--color") :: tl ->
-      handle {args with color = true} tl
-    | ("-f" | "--font") :: tl ->
-      handle {args with font = true} tl
+    | ("-c" | "--simple") :: tl ->
+      handle {args with simple = true} tl
     | ("-s" | "--shorthands") :: tl ->
       handle {args with shorthands = true} tl
     | ("-d" | "-duplicates") :: tl ->
       handle {args with duplicates = true} tl
     | ("-p" | "--pretty") :: tl ->
-      handle args ("-c" :: "-f" :: "-s" :: "-d" :: tl)
+      handle {args with simple = true; shorthands = true; duplicates = true} tl
     | ("-e" | "--echo") :: tl ->
       handle {args with echo = true} tl
 
@@ -89,16 +84,14 @@ let parse_args () =
 
   match handle default_args (List.tl (Array.to_list Sys.argv)) with
   | { whitespace = false;
-      color      = false;
-      font       = false;
+      simple     = false;
       shorthands = false;
       duplicates = false;
       echo       = false;
       _ } as args ->
     { args with
       whitespace = true;
-      color      = true;
-      font       = true;
+      simple     = true;
       shorthands = true;
       duplicates = true }
   | args -> args
@@ -130,12 +123,10 @@ let handle_args args =
 
   let input, css = parse_files args.infiles in
   let css = css
-    |> switch args.color Color.compress
-
     (* unfold before pruning duplicates so that shorthand components are
      * correctly pruned *)
     |> switch args.shorthands Shorthand.unfold_stylesheet
-    |> switch args.font Font.compress
+    |> switch args.simple Simple.compress
     |> switch args.duplicates Duplicates.compress
     |> switch args.shorthands Shorthand.compress
   in
