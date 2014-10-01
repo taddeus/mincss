@@ -104,6 +104,8 @@ let parse_files = function
     let rec loop = function
       | [] -> []
       | filename :: tl ->
+        if not (Sys.file_exists filename) then
+          raise (Failure ("file " ^ filename ^ " does not exist"));
         let input = Util.input_all (open_in filename) in
         let stylesheet = Parse.parse_input filename input in
         (input, stylesheet) :: loop tl
