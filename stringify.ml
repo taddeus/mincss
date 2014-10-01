@@ -12,14 +12,14 @@ let rec cat sep fn = function
   | [hd] -> fn hd
   | hd :: tl -> fn hd ^ sep ^ cat sep fn tl
 
+(*
+ * Pretty-printing
+ *)
+
 let string_of_num n =
   if float_of_int (int_of_float n) = n
     then string_of_int (int_of_float n)
     else string_of_float n
-
-(*
- * Pretty-printing
- *)
 
 let rec string_of_expr = function
   | Ident id -> id
@@ -146,12 +146,23 @@ let string_of_stylesheet = cat "\n\n" string_of_statement
  * Minified stringification
  *)
 
+let minify_num n =
+  if float_of_int (int_of_float n) = n then
+    string_of_int (int_of_float n)
+  else if n < 1.0 && n > -1.0 then
+    let s = string_of_float n in
+    String.sub s 1 (String.length s - 1)
+  else
+    string_of_float n
+
 let rec minify_expr = function
   | Concat values -> cat " " minify_expr values
   | Function (name, arg) -> name ^ "(" ^ minify_expr arg ^ ")"
   | Unary (op, opnd) -> op ^ minify_expr opnd
   | Nary (",", opnds) -> cat "," minify_expr opnds
   | Nary (op, opnds) -> cat op minify_expr opnds
+  | Number (n, None) -> minify_num n
+  | Number (n, Some u) -> minify_num n ^ u
   | expr -> string_of_expr expr
 
 let minify_declaration (name, value, important) =
@@ -181,9 +192,9 @@ let rec minify_statement = function
     "@media" ^ prefix_space (cat "," minify_media_query queries) ^
     "{" ^ cat "" minify_statement rulesets ^ "}"
   | Import (target, []) ->
-    "@import " ^ string_of_expr target ^ ";"
+    "@import " ^ minify_expr target ^ ";"
   | Import (target, queries) ->
-    "@import " ^ string_of_expr target ^ " " ^
+    "@import " ^ minify_expr target ^ " " ^
     cat "," string_of_media_query queries ^ ";"
   | Page (None, decls) ->
     "@page{" ^ cat ";" minify_declaration decls ^ "}"
@@ -191,7 +202,7 @@ let rec minify_statement = function
     "@page :" ^ pseudo ^ "{" ^ cat ";" minify_declaration decls ^ "}"
   | Font_face decls ->
     let minify_descriptor_declaration (name, value) =
-      name ^ ":" ^ string_of_expr value
+      name ^ ":" ^ minify_expr value
     in
     "@font-face{" ^ cat ";" minify_descriptor_declaration decls ^ "}"
   | Keyframes (prefix, id, rules) ->
