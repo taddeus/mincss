@@ -3,14 +3,12 @@ open Types
 let compress = function
   | Ident "aliceblue"               -> Hexcolor "f0f8ff"
   | Ident "antiquewhite"            -> Hexcolor "faebd7"
-  (*| Ident "aqua"                    -> Hexcolor "0ff"*)
   | Ident "aquamarine"              -> Hexcolor "7fffd4"
   | Hexcolor "f0ffff"               -> Ident "azure"
   | Hexcolor "f5f5dc"               -> Ident "beige"
   | Hexcolor "ffe4c4"               -> Ident "bisque"
   | Ident "black"                   -> Hexcolor "000"
   | Ident "blanchedalmond"          -> Hexcolor "ffebcd"
-  (*| Ident "blue"                    -> Hexcolor "00f"*)
   | Ident "blueviolet"              -> Hexcolor "8a2be2"
   | Hexcolor "a52a2a"               -> Ident "brown"
   | Ident "burlywood"               -> Hexcolor "deb887"
@@ -20,7 +18,6 @@ let compress = function
   | Hexcolor "ff7f50"               -> Ident "coral"
   | Ident "cornflowerblue"          -> Hexcolor "6495ed"
   | Ident "cornsilk"                -> Hexcolor "fff8dc"
-  (*| Ident "cyan"                    -> Hexcolor "0ff"*)
   | Ident "darkblue"                -> Hexcolor "00008b"
   | Ident "darkcyan"                -> Hexcolor "008b8b"
   | Ident "darkgoldenrod"           -> Hexcolor "b8860b"
@@ -110,7 +107,6 @@ let compress = function
   | Hexcolor "dda0dd"               -> Ident "plum"
   | Ident "powderblue"              -> Hexcolor "b0e0e6"
   | Hexcolor "800080"               -> Ident "purple"
-  | Ident "red"                     -> Hexcolor "f00"
   | Ident "rosybrown"               -> Hexcolor "bc8f8f"
   | Ident "royalblue"               -> Hexcolor "4169e1"
   | Ident "saddlebrown"             -> Hexcolor "8b4513"
