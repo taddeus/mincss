@@ -2,63 +2,106 @@ open Lexing
 open Types
 
 type args = {
-  mutable infiles : string list;
-  mutable outfile : string option;
-  mutable verbose : bool;
-  mutable prune   : bool;
-  mutable unfold  : bool;
-  mutable upto    : int option;
+  infiles    : string list;
+  outfile    : string option;
+  verbose    : bool;
+  whitespace : bool;
+  color      : bool;
+  font       : bool;
+  shorthands : bool;
+  duplicates : bool;
+  echo       : bool;
 }
 
-(* Parse command-line arguments *)
 let parse_args () =
-  let args = {
-    infiles = [];
-    outfile = None;
-    verbose = false;
-    prune = true;
-    unfold = true;
-    upto = None;
-  } in
-
-  let args_spec = [
-    ("<file> ...", Arg.Rest (fun _ -> ()),
-                 "   Input files (default is to read from stdin)");
-
-    ("-o", Arg.String (fun s -> args.outfile <- Some s),
-         "<file>     Output file (defaults to stdout)");
-
-    ("-v", Arg.Unit (fun _ -> args.verbose <- true),
-         "           Verbose mode: show compression rate");
-
-    ("-no-prune", Arg.Unit (fun _ -> args.prune <- false),
-                "    Don't prune duplicate properties (skip step 5 below)");
-
-    ("-no-unfold", Arg.Unit (fun _ -> args.unfold <- false),
-                 "   Only minify whitespace, colors and shorthands \
-                     (skip steps 2-7 below)");
-
-    ("-upto", Arg.Int (fun i -> args.upto <- Some i),
-            "<step>  Stop after the specified step (for debugging): \
-                                              \n                \
-                     1: parse                 \n                \
-                     2: unfold shorthands     \n                \
-                     3: unfold selectors      \n                \
-                     4: unfold blocks         \n                \
-                     5: prune duplicates      \n                \
-                     6: combine selectors     \n                \
-                     7: concatenate blocks    \n                \
-                     8: optimize blocks       \n                \
-                     9: minify");
-  ] in
-
   let usage =
-    "Usage: " ^ Sys.argv.(0) ^ " [-o <file>] [-v] [-no-prune] [-upto <step>] \
-                                 [<file> ...] "
+    "Usage: " ^ Sys.argv.(0) ^
+    " [<options>] [<file> ...]\n\
+     \n\
+     Generic options:\n \
+     -h, --help        Show this help message\n \
+     -v, --verbose     Verbose mode: show compression rate\n \
+     -o <file>         Output file (defaults to stdout)\n \
+     <file> ...        Input files (default is to read from stdin)\n\
+     \n\
+     Optimization flags (if none are specified, all are enabled):\n \
+     -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest \
+                       effect, omit for pretty-printing)\n \
+     -c, --color       Shorten colors\n \
+     -f, --font        Shorten font weights\n \
+     -s, --shorthands  Generate shorthand properties\n \
+     -d, --duplicates  Prune duplicate properties (WARNING: may affect \
+                       cross-browser hacks)\n \
+     -p, --pretty      Shorthand for -c -f -s -d\n \
+     -e, --echo        Just parse and pretty-print, no optimizations\n"
   in
 
-  Arg.parse args_spec (fun f -> args.infiles <- args.infiles @ [f]) usage;
-  args
+  let default_args = {
+    infiles    = [];
+    outfile    = None;
+    verbose    = false;
+    whitespace = false;
+    color      = false;
+    font       = false;
+    shorthands = false;
+    duplicates = false;
+    echo       = false;
+  } in
+
+  let rec handle args = function
+    | ("-v" | "--verbose") :: tl ->
+      handle {args with verbose = true} tl
+    | ("-w" | "--whitespace") :: tl ->
+      handle {args with whitespace = true} tl
+    | ("-c" | "--color") :: tl ->
+      handle {args with color = true} tl
+    | ("-f" | "--font") :: tl ->
+      handle {args with font = true} tl
+    | ("-s" | "--shorthands") :: tl ->
+      handle {args with shorthands = true} tl
+    | ("-d" | "-duplicates") :: tl ->
+      handle {args with duplicates = true} tl
+    | ("-p" | "--pretty") :: tl ->
+      handle args ("-c" :: "-f" :: "-s" :: "-d" :: tl)
+    | ("-e" | "--echo") :: tl ->
+      handle {args with echo = true} tl
+
+    | ("-h" | "--help") :: tl ->
+      prerr_string usage;
+      raise Exit_success
+
+    | ["-o"] ->
+      raise (Failure ("missing output file name"))
+    | "-o" :: next :: tl when next.[0] = '-' ->
+      raise (Failure ("missing output file name"))
+    | "-o" :: filename :: tl ->
+      handle {args with outfile = Some filename} tl
+
+    | arg :: tl when arg.[0] = '-' ->
+      prerr_string usage;
+      raise (Failure ("unknown option " ^ arg))
+
+    | filename :: tl ->
+      handle {args with infiles = args.infiles @ [filename]} tl
+
+    | [] -> args
+  in
+
+  match handle default_args (List.tl (Array.to_list Sys.argv)) with
+  | { whitespace = false;
+      color      = false;
+      font       = false;
+      shorthands = false;
+      duplicates = false;
+      echo       = false;
+      _ } as args ->
+    { args with
+      whitespace = true;
+      color      = true;
+      font       = true;
+      shorthands = true;
+      duplicates = true }
+  | args -> args
 
 let parse_files = function
   | [] ->
@@ -76,21 +119,6 @@ let parse_files = function
     (String.concat "" inputs, List.concat stylesheets)
 
 let handle_args args =
-  let steps =
-    (*let switch flag fn = if flag then fn else fun s -> s in*)
-    [
-      (*
-      switch args.unfold Unfold.unfold_shorthands;
-      switch args.unfold Unfold.unfold_selectors;
-      switch args.unfold Unfold.unfold_blocks;
-      switch (args.unfold && args.prune) Unfold.prune_duplicates;
-      switch args.unfold Combine.combine_selectors;
-      switch args.unfold Concat.concat_blocks;
-      Optimize.optimize_blocks;
-      *)
-    ]
-  in
-
   let write_output =
     match args.outfile with
     | None -> print_endline
@@ -98,31 +126,28 @@ let handle_args args =
       fun css -> let f = open_out name in output_string f css; close_out f
   in
 
-  let upto = match args.upto with Some i -> i | None -> 0 in
+  let switch flag fn = if flag then fn else fun x -> x in
 
-  let input, stylesheet = parse_files args.infiles in
-
-  let rec do_steps i stylesheet = function
-    | _ when i = upto ->
-      write_output (Stringify.string_of_stylesheet stylesheet)
-
-    | [] ->
-      let output = Stringify.minify_stylesheet stylesheet in
-      write_output output;
-
-      if args.verbose then begin
-        let il = String.length input in
-        let ol = String.length output in
-        Printf.fprintf stderr "compression: %d -> %d bytes (%d%% of original)\n"
-        il ol (int_of_float (float_of_int ol /. float_of_int il *. 100.))
-      end
-
-    | step :: tl ->
-      do_steps (i + 1) (step stylesheet) tl
+  let input, css = parse_files args.infiles in
+  let css = css
+    |> (switch args.color Color.compress)
+    (*|> (switch args.font Font.compress)*)
+    |> (switch args.shorthands Shorthand.compress)
+    (*|> (switch args.duplicates Duplicates.compress)*)
   in
+  let output =
+    if args.whitespace
+      then Stringify.minify_stylesheet css
+      else Stringify.string_of_stylesheet css
+  in
+  write_output output;
 
-  do_steps 1 stylesheet steps
-
+  if args.verbose then begin
+    let il = String.length input in
+    let ol = String.length output in
+    Printf.fprintf stderr "compression: %d -> %d bytes (%d%% of original)\n"
+    il ol (int_of_float (float_of_int ol /. float_of_int il *. 100.))
+  end
 
 (* Main function, returns exit status *)
 let main () =
@@ -137,6 +162,8 @@ let main () =
       prerr_endline ("Error: " ^ msg ^ ": " ^ Stringify.string_of_box box);
     | Failure msg ->
       prerr_endline ("Error: " ^ msg);
+    | Exit_success ->
+      exit 0
   end;
   exit 1
 
