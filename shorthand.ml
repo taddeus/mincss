@@ -28,13 +28,17 @@ let rec decls_mem name = function
 (* find the value of the last declaration of some property (since the earlier
  * values are overridden), unless an earlier !important value was found *)
 let decls_find name decls =
-  let rec wrap known = function
-    | [] -> known
-    | (nm, value, true) :: _ when nm = name -> Some value
-    | (nm, value, false) :: tl when nm = name -> wrap (Some value) tl
-    | _ :: tl -> wrap known tl
+  let rec wrap known must_be_imp = function
+    | [] ->
+      known
+    | (nm, value, false) :: tl when nm = name && not must_be_imp ->
+      wrap (Some value) false tl
+    | (nm, value, true) :: tl when nm = name ->
+      wrap (Some value) true tl
+    | _ :: tl ->
+      wrap known must_be_imp tl
   in
-  match wrap None decls with
+  match wrap None false decls with
   | None -> raise Not_found
   | Some value -> value
 
@@ -261,7 +265,8 @@ let make_shorthands decls =
   let keep_prop = function
     | ("line-height", _, _) ->
       not (decls_mem "font" shorthands)
-    | (name, _, _) ->
+    | (name, _, imp) ->
+      imp ||
       not (Str.string_match pattern name 0) ||
       let base = Str.matched_group 1 name in
       let sub = Str.matched_group 2 name in
