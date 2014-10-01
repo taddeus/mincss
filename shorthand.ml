@@ -232,7 +232,8 @@ let rec unfold = function
 let make_shorthands decls =
   (* unfold currently existing shorthands into separate properties for merging
    * with override properties that are defined later on *)
-  let decls = unfold decls in
+  (*let decls = unfold decls in
+    XXX: done by main function for correct pruning of duplicate declarations*)
 
   (* find shorthand names for which properties are present *)
   let rec find_props = function
