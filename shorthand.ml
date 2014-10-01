@@ -273,10 +273,3 @@ let transform = function
   | v -> v
 
 let compress = Util.transform_stylesheet transform
-
-let transform_unfold = function
-  | Statement (Ruleset (selectors, decls)) ->
-    Statement (Ruleset (selectors, unfold decls))
-  | v -> v
-
-let unfold_stylesheet = Util.transform_stylesheet transform_unfold
