@@ -5,10 +5,6 @@ open Types
  * - http://www.w3.org/TR/CSS2/cascade.html#specificity
  *)
 
-let is_pseudo_class = function
-  | Pseudo_class (_, ("link" | "hover" | "visited" | "active"), None) -> true
-  | _ -> false
-
 (* Specificity (a, b, c, d):
  * a = 0 (1 if in style="" definition which is always false in a stylesheet)
  * b = number of ID attributes
@@ -24,13 +20,10 @@ let rec specificity =
     (0, 0, 0, 1)
   | Id (base, _) ->
     add (0, 1, 0, 0) (specificity base)
-  | Class (base, _) | Attribute (base, _, _) ->
+  | Class (base, _) | Attribute (base, _, _) | Pseudo_class (base, _, _) ->
     add (0, 0, 1, 0) (specificity base)
-  | Pseudo_class (base, _, _) as addon when is_pseudo_class addon ->
-    add (0, 0, 1, 0) (specificity base)
-  | Pseudo_class (base, _, _) ->
+  | Pseudo_element (base, _) ->
     add (0, 0, 0, 1) (specificity base)
-  (* XXX: Pseudo_element *)
   | Combinator (left, _, right) ->
     add (specificity left) (specificity right)
 
