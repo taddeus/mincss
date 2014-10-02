@@ -10,9 +10,10 @@ transformation passes.
 Installation
 ============
 
-For now, there is no easy installation option for mincss (yet). A pre-built
-64-bit ELF binary is available for download [here](dist/mincss). You can also
-build the binary from source (see *Building mincss* below).
+For now, there is no easy installation option for mincss (yet). An up-to-date
+64-bit ELF binary is available for download
+[here](http://mincss.tkroes.nl/mincss). You can also build the binary from
+source (see *Building mincss* below).
 
 
 Features
