@@ -1,4 +1,5 @@
 RESULT    := mincss
+DIST      := dist/mincss
 PRE_TGTS  := types
 MODULES   := color_names util stringify parser lexer parse selector simple \
              shorthand duplicates main
@@ -11,10 +12,16 @@ OCAMLLDLIBS  := str.cmxa
 OCAMLLEX  := ocamllex
 OCAMLYACC := menhir --infer --explain --dump
 
-.PHONY: all clean
+.PHONY: all dist clean
 .PRECIOUS: $(addprefix .cmi,$(ALL_NAMES))
 
 all: $(RESULT)
+
+dist: $(DIST)
+
+$(DIST): $(RESULT)
+	@mkdir -p $(@D)
+	cp $< $@
 
 %.ml: %.mll
 	$(OCAMLLEX) -o $@ $<

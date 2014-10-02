@@ -7,8 +7,16 @@ with the official CSS specification and a traversal utility function for use in
 transformation passes.
 
 
-Optimizations
-=============
+Installation
+============
+
+For now, there is no easy installation option for mincss (yet). A pre-built
+64-bit ELF binary is available for download [here](dist/mincss). You can also
+build the binary from source (see *Building mincss* below).
+
+
+Features
+========
 
 Whitespace compression
 ----------------------
@@ -37,6 +45,11 @@ counterparts, after which the last value is used for shorthand generation:
 
     font: normal 12px/15px sans-serif;  |  font: bold 12px/15px sans-serif;
     font-weight: bold;                  |
+
+Sorting declarations
+--------------------
+The `--sort` command-line option sorts declarations alphabetically. This option
+is disabled by default since it does not affect file size.
 
 
 Command-line interface
