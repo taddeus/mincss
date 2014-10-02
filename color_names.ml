@@ -107,6 +107,7 @@ let compress = function
   | Hexcolor "dda0dd"               -> Ident "plum"
   | Ident "powderblue"              -> Hexcolor "b0e0e6"
   | Hexcolor "800080"               -> Ident "purple"
+  | Hexcolor "f00"                  -> Ident "red"
   | Ident "rosybrown"               -> Hexcolor "bc8f8f"
   | Ident "royalblue"               -> Hexcolor "4169e1"
   | Ident "saddlebrown"             -> Hexcolor "8b4513"

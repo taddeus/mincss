@@ -16,7 +16,7 @@ let rec shorten_expr = function
   (* #aabbcc -> #abc *)
   | Hexcolor h when Str.string_match hex6 h 0 ->
     let gr n = Str.matched_group n h in
-    Hexcolor (gr 1 ^ gr 2 ^ gr 3)
+    shorten_expr (Hexcolor (gr 1 ^ gr 2 ^ gr 3))
 
   (* rgb(r,g,b) -> #rrggbb *)
   | Function ("rgb", Nary (",", [r; g; b]))
