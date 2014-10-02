@@ -47,10 +47,10 @@ let shorten_font_weight = function
   | Ident "bold"   -> Number (700.0, None)
   | v -> v
 
-let transform = function
-  | Expr value -> Expr (shorten_expr value)
-  | Declaration ("font-weight", value, imp) ->
-    Declaration ("font-weight", shorten_font_weight value, imp)
-  | v -> v
-
-let compress = Util.transform_stylesheet transform
+let compress =
+  Util.transform_stylesheet begin function
+    | Expr value -> Expr (shorten_expr value)
+    | Declaration ("font-weight", value, imp) ->
+      Declaration ("font-weight", shorten_font_weight value, imp)
+    | v -> v
+  end

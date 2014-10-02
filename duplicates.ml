@@ -29,9 +29,9 @@ let prune_duplicates decls =
   in
   prune 0 decls
 
-let transform = function
-  | Statement (Ruleset (selectors, decls)) ->
-    Statement (Ruleset (selectors, prune_duplicates decls))
-  | v -> v
-
-let compress = Util.transform_stylesheet transform
+let compress =
+  Util.transform_stylesheet begin function
+    | Statement (Ruleset (selectors, decls)) ->
+      Statement (Ruleset (selectors, prune_duplicates decls))
+    | v -> v
+  end

@@ -274,16 +274,16 @@ let make_shorthands decls =
   in
   List.filter keep_prop decls @ shorthands
 
-let transform = function
-  | Statement (Ruleset (selectors, decls)) ->
-    Statement (Ruleset (selectors, make_shorthands decls))
-  | v -> v
+let compress =
+  Util.transform_stylesheet begin function
+    | Statement (Ruleset (selectors, decls)) ->
+      Statement (Ruleset (selectors, make_shorthands decls))
+    | v -> v
+  end
 
-let compress = Util.transform_stylesheet transform
-
-let transform_unfold = function
-  | Statement (Ruleset (selectors, decls)) ->
-    Statement (Ruleset (selectors, unfold decls))
-  | v -> v
-
-let unfold_stylesheet = Util.transform_stylesheet transform_unfold
+let unfold_stylesheet =
+  Util.transform_stylesheet begin function
+    | Statement (Ruleset (selectors, decls)) ->
+      Statement (Ruleset (selectors, unfold decls))
+    | v -> v
+  end
