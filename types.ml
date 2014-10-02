@@ -8,6 +8,7 @@ type expr =
   | Hexcolor of string
   | Unary of string * expr
   | Nary of string * expr list
+  | Key_value of string * string * expr
 
 type declaration = string * expr * bool
 
@@ -63,6 +64,8 @@ type statement =
   (* @[-<prefix>-]keyframes <id> { <rulesets> } *)
   | Supports of condition * statement list
   (* @supports <condition> { <rulesets> } *)
+  | Viewport of string * declaration list
+  (* @[-<prefix>-]viewport { <declarations> } *)
 
 type stylesheet = statement list
 

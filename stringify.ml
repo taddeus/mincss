@@ -34,6 +34,7 @@ let rec string_of_expr = function
   | Unary (op, opnd) -> op ^ string_of_expr opnd
   | Nary (",", opnds) -> cat ", " string_of_expr opnds
   | Nary (op, opnds) -> cat op string_of_expr opnds
+  | Key_value (key, op, value) -> key ^ op ^ string_of_expr value
 
 let string_of_declaration (name, value, important) =
   let imp = if important then " !important" else "" in
@@ -141,6 +142,8 @@ let rec string_of_statement = function
   | Supports (condition, statements) ->
     "@supports " ^ string_of_condition condition ^
     block (cat "\n\n" string_of_statement statements)
+  | Viewport (prefix, decls) ->
+    "@" ^ prefix ^ "viewport" ^ block (cat "\n" string_of_declaration decls)
 
 let string_of_stylesheet = cat "\n\n" string_of_statement
 
@@ -168,6 +171,7 @@ let rec minify_expr = function
   | Nary (op, opnds) -> cat op minify_expr opnds
   | Number (n, None) -> minify_num n
   | Number (n, Some u) -> minify_num n ^ u
+  | Key_value (key, op, value) -> key ^ op ^ minify_expr value
   | expr -> string_of_expr expr
 
 let minify_declaration (name, value, important) =
@@ -219,6 +223,8 @@ let rec minify_statement = function
   | Supports (condition, statements) ->
     "@supports " ^ stringify_condition "" condition ^
     "{" ^ cat "" minify_statement statements ^ "}"
+  | Viewport (prefix, decls) ->
+    "@" ^ prefix ^ "viewport{" ^ cat ";" minify_declaration decls ^ "}"
   | statement -> string_of_statement statement
 
 let minify_stylesheet = cat "" minify_statement

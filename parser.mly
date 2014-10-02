@@ -58,7 +58,8 @@
 %token NAMESPACE_SYM SUPPORTS_SYM IMPORTANT_SYM
 %token <float> PERCENTAGE NUMBER
 %token <float * string> UNIT_VALUE
-%token <string> KEYFRAMES_SYM COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
+%token <string> KEYFRAMES_SYM VIEWPORT_SYM COMBINATOR RELATION STRING IDENT HASH
+%token <string> URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON DOUBLE_COLON
 %token COMMA DOT PLUS MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
 %token WS_AND WS_OR
@@ -90,7 +91,7 @@ stylesheet:
 
 nested_statement:
   | s=ruleset | s=media | s=page | s=font_face_rule | s=keyframes_rule
-  | s=supports_rule
+  | s=supports_rule | s=viewport_rule
   { s }
 
 group_rule_body:
@@ -209,6 +210,10 @@ S*;
 unused      : block | ATKEYWORD S* | ';' S* | CDO S* | CDC S*;
   *)
 
+viewport_rule:
+  | pre=VIEWPORT_SYM S* decls=decls_block
+  { Viewport (pre, decls) }
+
 %inline decls_block:
   | LBRACE S* hd=declaration? tl=wspreceded(SEMICOL, declaration?)* RBRACE S*
   { filter_none (hd :: tl) }
@@ -285,13 +290,30 @@ term:
   | v=numval S*                     { v }
   | str=STRING S*                   { Strlit str }
   | id=IDENT S*                     { Ident (String.lowercase id) }
+  | ONLY S*                         { Ident "only" }
+  | NOT S*                          { Ident "not" }
+  | AND S*                          { Ident "and" }
+  | FROM S*                         { Ident "from" }
+  | TO S*                           { Ident "to" }
   | uri=URI S*                      { Uri uri }
   | fn=FUNCTION arg=expr RPAREN S*  { Function (String.lowercase fn, arg) }
+  | key=IDENT S* COLON S* value=term
+  { Key_value (key, ":", value) }
+  | key=IDENT S* DOT S* value=term
+  { Key_value (key, ".", value) }
+  | key=IDENT S* rel=RELATION S* value=term
+  {
+    if rel = "="
+      then Key_value (key, "=", value)
+      else raise (Syntax_error ("unexpected '" ^ rel ^ "'"))
+  }
   | hex=HASH S*
-  { let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
+  {
+    let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
     if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
       then Hexcolor (String.lowercase hex)
-      else raise (Syntax_error ("invalid color #" ^ hex)) }
+      else raise (Syntax_error ("invalid color #" ^ hex))
+  }
 unary_operator:
   | MINUS  { "-" }
   | PLUS   { "+" }
