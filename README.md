@@ -113,8 +113,8 @@ Bootstrapping on a Debian system can be done as follows:
 TODO / bugs
 ===========
 
-- `border` shorthand generation produces out0of-order results when
-  direction-specific ddeclarations follow a generic border declaration. This
-  produces inequivalent CSS and must be fixed by unfolding each generic border
-  declaration into four direction-specific ones, and sybsequently generating
-  the shortest possible representation of the resulting box model.
+- `border` shorthand generation produces out-of-order results when
+  direction-specific declarations follow a generic border declaration. This
+  produces inequivalent CSS, and could be fixed by unfolding each generic
+  border declaration into four direction-specific ones, and sybsequently
+  generating the shortest possible representation of the resulting box model.
