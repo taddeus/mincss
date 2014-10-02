@@ -42,6 +42,9 @@ util.cmx simple.cmx: color_names.cmx
 stringify.cmx parser.cmx simple.cmx shorthand.cmx: util.cmi
 $(addsuffix .cmx,$(MODULES)): $(addsuffix .cmi,$(PRE_TGTS))
 
+%.html: %.md
+	markdown $^ > $@
+
 clean:
 	rm -f *.cmi *.cmx *.o lexer.ml parser.ml parser.mli parser.conflicts \
-		parser.automaton $(RESULT)
+		parser.automaton README.html $(RESULT)
