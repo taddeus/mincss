@@ -34,7 +34,7 @@ let parse_args () =
      -p, --pretty      Shorthand for -c -s -d\n \
      -e, --echo        Just parse and pretty-print, no optimizations\n\
      \n\
-     Formatting options:
+     Formatting options:\n \
      --sort            Sort declarations in each selector group\n\
      "
   in
