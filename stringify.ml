@@ -147,13 +147,16 @@ let string_of_stylesheet = cat "\n\n" string_of_statement
  *)
 
 let minify_num n =
+  (* Round numbers to at most 2 decimal digits *)
+  let round2 n = floor (100. *. n +. 0.5) /. 100. in
+
   if float_of_int (int_of_float n) = n then
     string_of_int (int_of_float n)
   else if n < 1.0 && n > -1.0 then
-    let s = string_of_float n in
+    let s = string_of_float (round2 n) in
     String.sub s 1 (String.length s - 1)
   else
-    string_of_float n
+    string_of_float (round2 n)
 
 let rec minify_expr = function
   | Concat values -> cat " " minify_expr values
