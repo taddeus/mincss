@@ -1,8 +1,8 @@
 RESULT    := mincss
 DIST      := dist/mincss
 PRE_TGTS  := types
-MODULES   := color_names util stringify parser lexer parse selector simple \
-             shorthand duplicates main
+MODULES   := color_names util stringify parser lexer parse simple shorthand \
+             duplicates main
 ALL_NAMES := $(PRE_TGTS) $(MODULES)
 
 OCAMLCFLAGS  := -g

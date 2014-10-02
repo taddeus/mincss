@@ -53,10 +53,12 @@ let rec stringify_selector w selector =
     str base ^ "[" ^ attr ^ "]"
   | Attribute (base, attr, Some (op, value)) ->
     str base ^ "[" ^ attr ^ w ^ op ^ w ^ string_of_expr value ^ "]"
-  | Pseudo (base, sel, None) ->
-    str base ^ ":" ^ sel
-  | Pseudo (base, fn, Some args) ->
+  | Pseudo_class (base, cls, None) ->
+    str base ^ ":" ^ cls
+  | Pseudo_class (base, fn, Some args) ->
     str base ^ ":" ^ fn ^ "(" ^ cat ("," ^ w) str args ^ ")"
+  | Pseudo_element (base, elem) ->
+    str base ^ "::" ^ elem
   | Combinator (left, " ", right) ->
     str left ^ " " ^ str right
   | Combinator (left, com, right) ->

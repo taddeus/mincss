@@ -47,8 +47,10 @@
       append_addons (Class (base, cls)) tl
     | `Attribute (attr, value) :: tl ->
       append_addons (Attribute (base, attr, value)) tl
-    | `Pseudo (f, args) :: tl ->
-      append_addons (Pseudo (base, f, args)) tl
+    | `Pseudo_class (f, args) :: tl ->
+      append_addons (Pseudo_class (base, f, args)) tl
+    | `Pseudo_element elem :: tl ->
+      append_addons (Pseudo_element (base, elem)) tl
 %}
 
 (* Tokens *)
@@ -57,8 +59,8 @@
 %token <float> PERCENTAGE NUMBER
 %token <float * string> UNIT_VALUE
 %token <string> KEYFRAMES_SYM COMBINATOR RELATION STRING IDENT HASH URI FUNCTION
-%token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON COMMA DOT PLUS
-%token MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
+%token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON DOUBLE_COLON
+%token COMMA DOT PLUS MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
 %token WS_AND WS_OR
 
 (* Start symbol *)
@@ -254,9 +256,11 @@ attrib:
   | S* s=STRING S*  { Strlit s }
 pseudo:
   | COLON id=IDENT
-  { `Pseudo (String.lowercase id, None) }
+  { `Pseudo_class (String.lowercase id, None) }
   | COLON f=FUNCTION args=wslist(COMMA, simple_selector) RPAREN
-  { `Pseudo (String.lowercase f, Some args) }
+  { `Pseudo_class (String.lowercase f, Some args) }
+  | DOUBLE_COLON id=IDENT
+  { `Pseudo_element (String.lowercase id) }
 
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))

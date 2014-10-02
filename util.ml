@@ -139,11 +139,13 @@ let transform_stylesheet f stylesheet =
       f (Selector (Class (expect_selector base, cls)))
     | Attribute (base, attr, value) ->
       f (Selector (Attribute (expect_selector base, attr, value)))
-    | Pseudo (base, sel, None) ->
-      f (Selector (Pseudo (expect_selector base, sel, None)))
-    | Pseudo (base, fn, Some args) ->
+    | Pseudo_class (base, cls, None) ->
+      f (Selector (Pseudo_class (expect_selector base, cls, None)))
+    | Pseudo_class (base, fn, Some args) ->
       let args = trav_all_selector args in
-      f (Selector (Pseudo (expect_selector base, fn, Some args)))
+      f (Selector (Pseudo_class (expect_selector base, fn, Some args)))
+    | Pseudo_element (base, elem) ->
+      f (Selector (Pseudo_element (expect_selector base, elem)))
     | Combinator (left, com, right) ->
       let left = expect_selector left in
       let right = expect_selector right in

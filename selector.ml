@@ -6,7 +6,7 @@ open Types
  *)
 
 let is_pseudo_class = function
-  | Pseudo (_, ("link" | "hover" | "visited" | "active"), None) -> true
+  | Pseudo_class (_, ("link" | "hover" | "visited" | "active"), None) -> true
   | _ -> false
 
 (* Specificity (a, b, c, d):
@@ -26,10 +26,11 @@ let rec specificity =
     add (0, 1, 0, 0) (specificity base)
   | Class (base, _) | Attribute (base, _, _) ->
     add (0, 0, 1, 0) (specificity base)
-  | Pseudo (base, _, _) as addon when is_pseudo_class addon ->
+  | Pseudo_class (base, _, _) as addon when is_pseudo_class addon ->
     add (0, 0, 1, 0) (specificity base)
-  | Pseudo (base, _, _) ->
+  | Pseudo_class (base, _, _) ->
     add (0, 0, 0, 1) (specificity base)
+  (* XXX: Pseudo_element *)
   | Combinator (left, _, right) ->
     add (specificity left) (specificity right)
 

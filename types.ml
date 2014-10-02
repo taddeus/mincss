@@ -17,7 +17,8 @@ type selector =
   | Element of string
   | Id of selector * string
   | Class of selector * string
-  | Pseudo of selector * string * selector list option
+  | Pseudo_class of selector * string * selector list option
+  | Pseudo_element of selector * string
   | Attribute of selector * string * (string * expr) option
   | Combinator of selector * string * selector
 
