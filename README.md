@@ -29,6 +29,9 @@ Whitespace compression
 Compression of simple expressions
 ---------------------------------
 
+    color: rgb(257, -2, 0);             |  color: red;
+    color: rgb(67%, 67.5%, 68%);        |  color: #abacad;
+    color: #aaffbb;                     |  color: #afb;
     color: white;                       |  color: #fff;
     font-weight: normal;                |  font-weight: 400;
 
@@ -45,6 +48,18 @@ counterparts, after which the last value is used for shorthand generation:
 
     font: normal 12px/15px sans-serif;  |  font: bold 12px/15px sans-serif;
     font-weight: bold;                  |
+
+Pruning duplicate declarations
+------------------------------
+
+    color: #000;                        |  color: #fff;
+    color: #fff;                        |
+
+Note that `!important` annotations are correctly handled:
+
+    color: #eee !important;             |  color: #000 !important;
+    color: #000 !important;             |
+    color: #fff;                        |
 
 Sorting declarations
 --------------------
