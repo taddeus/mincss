@@ -10,3 +10,4 @@ parser.ml
 parser.mli
 parser.conflicts
 parser.automaton
+README.html
