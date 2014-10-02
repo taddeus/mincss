@@ -1,0 +1,37 @@
+@charset "UTF-8";
+
+@import url("base.css");
+
+div[class ~= "foo"] > ul li {
+    font: normal 12px / 15px Arial, Tahoma, Verdana;
+    bordeR: 1px solid #fff;
+}
+
+@media all and (max-width: 699px) and (min-width: 520px), (min-width: 1151px) {
+    a {
+        font-weight: bold
+    }
+}
+
+.weird-shit-ie-1 {
+    filter: alpha(opacity=60);
+}
+.weird-shit-ie-2 {
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#80000000', endColorstr='#00000000', GradientType=1);
+}
+.weird-shit-webkit {
+    background-image: linear-gradient(to right, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);
+}
+
+@-ms-viewport {
+    width: device-width;
+}
+
+@media all {
+    @-ms-viewport {
+        width: device-width;
+    }
+    a {
+        font-weight : bold;
+    }
+}

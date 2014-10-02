@@ -1,0 +1,14 @@
+.bg1  { background: transparent url(cat.png) no-repeat scroll left center; }
+.bg2  { background: url(cat.png) no-repeat scroll left center; }
+.bg3  { background: url(cat.png) scroll left center; }
+.bg4  { background: url(cat.png) repeat left center; }
+.bg5  { background: url(cat.png) left center; }
+.bg6  { background: url(cat.png) scroll; }
+.bg7  { background: url(cat.png) repeat-x; }
+.bg8  { background: url(cat.png) inherit; }
+.bg9  { background: url(cat.png); }
+.bg10 { background: #fff; }
+
+.list-style1 { list-style: circle outset url(cat.png) }
+.list-style2 { list-style: disk inset }
+.list-style3 { list-style: inset url(cat.png) }

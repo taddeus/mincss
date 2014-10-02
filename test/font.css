@@ -1,0 +1,8 @@
+a {
+    font-weight: bold;
+    /* font-weight: 700 */
+}
+a {
+    font: normal 12px sans-serif;
+    /* font: 400 12px sans-serif */
+}

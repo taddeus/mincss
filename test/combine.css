@@ -1,0 +1,11 @@
+a    { color: red; }
+.foo { font-size: 1em; }
+ul   { color: red; }
+.foo { color: blue; }
+li   { color: red; }
+
+/*
+a, ul { color: red; }
+.foo  { font-size: 1em; color: blue; }
+li    { color: red; }
+*/

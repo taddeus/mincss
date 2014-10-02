@@ -1,0 +1,36 @@
+a {
+    color: red;
+    color: blue;
+    /* color: blue */
+}
+
+a {
+    color: red !important;
+    color: blue;
+    /* color: red !important */
+}
+
+a {
+    color: red !important;
+    color: blue;
+    color: green !important;
+    color: black;
+    /* color: green !important */
+}
+
+li {
+    font-size: 13px;
+    font: 12px/14px normal;
+    /* font: 12px/14px normal */
+}
+
+li {
+    font-size: 11px !important;
+    font-size: 13px !important;
+    font-size: 14px;
+    font: 12px/15px normal;
+    /*
+    font-size: 13px !important;
+    font: 13px/15px normal;
+    */
+}

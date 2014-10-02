@@ -1,0 +1,5 @@
+li {
+    margin: 0;          /* 0   */
+    opacity: 0.5;       /* .5  */
+    -moz-opacity: 1.5;  /* 1.5 */
+}

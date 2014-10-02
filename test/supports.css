@@ -1,0 +1,5 @@
+@supports (not (display: flexbox)) and ((a: b) or (b: c)) {
+  body { width: 100%; height: 100%; background: white; color: black; }
+  #navigation { width: 25%; }
+  #article { width: 75%; }
+}
