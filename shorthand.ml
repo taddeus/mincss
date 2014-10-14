@@ -215,7 +215,7 @@ let rec unfold = function
    *       | top right bottom left
    *       | all
    *)
-  | (("margin"| "padding") as base, value, imp) :: tl ->
+  | (("margin" | "padding") as base, value, imp) :: tl ->
     let (top, right, bottom, left) =
       match value with
       | Concat [top; right; bottom; left] ->
@@ -265,8 +265,8 @@ let make_shorthands decls =
   let keep_prop = function
     | ("line-height", _, _) ->
       not (decls_mem "font" shorthands)
-    | (name, _, imp) ->
-      imp ||
+    | (name, _, important) ->
+      important ||
       not (Str.string_match pattern name 0) ||
       let base = Str.matched_group 1 name in
       let sub = Str.matched_group 2 name in
