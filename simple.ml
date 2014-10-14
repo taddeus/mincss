@@ -55,5 +55,7 @@ let compress =
     | Expr value -> Expr (shorten_expr value)
     | Declaration ("font-weight", value, imp) ->
       Declaration ("font-weight", shorten_font_weight value, imp)
+    | Declaration (("border" | "outline") as name, Ident "none", imp) ->
+      Declaration (name, Number (0., None), imp)
     | v -> v
   end
