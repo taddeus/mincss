@@ -39,6 +39,9 @@ let rec shorten_expr = function
 
   (* TODO: hsl[a](...) *)
 
+  (* 0px -> 0 *)
+  | Number (0., Some _) -> Number (0., None)
+
   (* transform color names to shorter hex codes and vice-versa *)
   | v -> Color_names.compress v
 
