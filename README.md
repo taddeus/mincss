@@ -120,3 +120,5 @@ TODO / bugs
   generating the shortest possible representation of the resulting box model.
 - `border:none` could be `border:0`, or in general any shorthand that has both
   a `style` and `width` property should be transformed from `none` into `0`.
+- `padding: 0 !important` is expanded to 4 directions because of the
+  `!important`

@@ -24,7 +24,7 @@ let parse_args () =
      -o <file>         Output file (defaults to stdout)\n \
      <file> ...        Input files (default is to read from stdin)\n\
      \n\
-     Optimization flags (if none are specified, all are enabled):\n \
+     Optimization flags (default is -w -c -s -d):\n \
      -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest \
                        effect, omit for pretty-printing)\n \
      -c, --simple      Shorten colors, font weights and nth-child\n \
@@ -32,10 +32,11 @@ let parse_args () =
      -d, --duplicates  Prune duplicate properties (WARNING: may affect \
                        cross-browser hacks)\n \
      -p, --pretty      Shorthand for -c -s -d\n \
-     -e, --echo        Just parse and pretty-print, no optimizations\n\
      \n\
      Formatting options:\n \
-     -r, --sort        Sort declarations in each selector group\n\
+     -r, --sort        Sort declarations in each ruleset (always on when \
+                       --shorthands is enabled)\n\
+     -e, --echo        Just parse and pretty-print, no optimizations\n\
      "
   in
 
