@@ -126,5 +126,8 @@ TODO / bugs
   produces inequivalent CSS, and could be fixed by unfolding each generic
   border declaration into four direction-specific ones, and sybsequently
   generating the shortest possible representation of the resulting box model.
+  Edit: a better/easier solution is to generate shorthand properties at the
+  index of the first merged declaration. This might not work in all cases but
+  it is better than putting everything at the end.
 - `border:none` could be `border:0`, or in general any shorthand that has both
   a `style` and `width` property should be transformed from `none` into `0`.
