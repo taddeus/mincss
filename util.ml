@@ -20,7 +20,7 @@ let rec filter_none = function
 
 let input_all ic =
   let n = in_channel_length ic in
-  let buf = String.create n in
+  let buf = Bytes.create n in
   really_input ic buf 0 n;
   close_in ic;
   buf
@@ -32,11 +32,11 @@ let input_buffered ic chunksize =
     | nread when nread = bufsize - pos ->
       let bufsize = bufsize + chunksize in
       let pos = pos + nread in
-      read_all (buf ^ String.create chunksize) bufsize pos
+      read_all (buf ^ Bytes.create chunksize) bufsize pos
     | nread ->
       read_all buf bufsize (pos + nread)
   in
-  read_all (String.create chunksize) chunksize 0
+  read_all (Bytes.create chunksize) chunksize 0
 
 (** Error printing *)
 

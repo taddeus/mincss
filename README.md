@@ -45,7 +45,8 @@ Generation of shorthand properties
     font-family: sans-serif;            |
 
 Any existing shorthands are first unfolded into their non-shorthand
-counterparts, after which the last value is used for shorthand generation:
+counterparts to be folded back later. This means that if `--duplicates` is
+enabled, the last value is used for shorthand generation, merging separate :
 
     font: normal 12px/15px sans-serif;  |  font: bold 12px/15px sans-serif;
     font-weight: bold;                  |
@@ -72,7 +73,7 @@ Command-line interface
 ======================
 Output of `mincss -h`:
 
-    Usage: ./mincss [<options>] [<file> ...]
+    Usage: mincss [<options>] [<file> ...]
 
     Generic options:
      -h, --help        Show this help message
@@ -80,16 +81,16 @@ Output of `mincss -h`:
      -o <file>         Output file (defaults to stdout)
      <file> ...        Input files (default is to read from stdin)
 
-    Optimization flags (if none are specified, all are enabled):
+    Optimization flags (default is -w -c -s -d):
      -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest effect, omit for pretty-printing)
-     -c, --simple      Shorten colors and font weights
+     -c, --simple      Shorten colors, font weights and nth-child
      -s, --shorthands  Generate shorthand properties
      -d, --duplicates  Prune duplicate properties (WARNING: may affect cross-browser hacks)
      -p, --pretty      Shorthand for -c -s -d
-     -e, --echo        Just parse and pretty-print, no optimizations
 
     Formatting options:
-     --sort            Sort declarations in each selector group
+     -r, --sort        Sort declarations in each ruleset (always on when --shorthands is enabled)
+     -e, --echo        Just parse and pretty-print, no optimizations
 
 
 Building mincss
@@ -100,14 +101,21 @@ Dependencies are [OCaml](https://ocaml.org/docs/install.html) 4.0 and
 
 Bootstrapping on a Debian system can be done as follows:
 
-    $ sudo apt-get install ocaml opam git
-    $ opam init
-    $ opam switch 4.01.0
-    $ opam install menhir
+    $ sudo apt-get install ocaml menhir git
     $ git clone git@github.com:taddeus/mincss.git
     $ cd mincss
     $ make
     $ ./mincss --help
+
+I prefer to use [Opam](https://opam.ocaml.org/) myself because it offers more
+flexibility:
+
+    $ sudo apt-get install opam
+    $ opam init
+    $ eval `opam config env`
+    $ opam switch 4.02.0
+    $ opam update
+    $ opam install menhir
 
 
 TODO / bugs
