@@ -35,7 +35,7 @@ let parse_args () =
      -e, --echo        Just parse and pretty-print, no optimizations\n\
      \n\
      Formatting options:\n \
-     --sort            Sort declarations in each selector group\n\
+     -r, --sort        Sort declarations in each selector group\n\
      "
   in
 
@@ -66,7 +66,7 @@ let parse_args () =
       handle {args with simple = true; shorthands = true; duplicates = true} tl
     | ("-e" | "--echo") :: tl ->
       handle {args with echo = true} tl
-    | "--sort" :: tl ->
+    | ("-r" | "--sort") :: tl ->
       handle {args with sort = true} tl
 
     | ("-h" | "--help") :: tl ->
@@ -79,6 +79,13 @@ let parse_args () =
       raise (Failure ("missing output file name"))
     | "-o" :: filename :: tl ->
       handle {args with outfile = Some filename} tl
+
+    | arg :: tl when String.length arg > 1 && arg.[0] = '-' && arg.[1] <> '-' ->
+      let rec handle_opts args = function
+        | i when i = String.length arg -> args
+        | i -> handle_opts (handle args ["-" ^ String.make 1 arg.[i]]) (i + 1)
+      in
+      handle_opts args 1
 
     | arg :: tl when arg.[0] = '-' ->
       prerr_string usage;
