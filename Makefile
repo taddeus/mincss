@@ -26,12 +26,12 @@ all: $(RESULT)
 	ocamlc -c $(OCAMLCFLAGS) -o $@ $<
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
+	ocamlopt -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
 
 $(RESULT): $(addsuffix .cmx,$(ALL_NAMES))
 	ocamlopt -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
 
-# intra-module dependencies
+# module dependencies
 lexer.cmi: lexer.ml
 parser.cmx: parser.cmi lexer.cmx
 parser.mli: parser.ml
