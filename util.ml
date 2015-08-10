@@ -244,14 +244,26 @@ let is_color = Color_names.is_color
 (** Sorting declarations *)
 
 let sort_stylesheet =
+  let pattern = Str.regexp "^\\([^-]+\\)-\\(.*\\)$" in
   transform_stylesheet begin function
     | Statement (Ruleset (selectors, decls)) ->
-      let pattern = Str.regexp "^\\([^-]+\\)-" in
-      let stem x =
-        if Str.string_match pattern x 0 then Str.matched_group 1 x else x
+      let split x =
+        if Str.string_match pattern x 0
+          then Some (Str.matched_group 1 x, Str.matched_group 2 x)
+          else None
       in
-      let cmp (a, _, _) (b, _, _) = String.compare (stem a) (stem b) in
-      Statement (Ruleset (selectors, List.stable_sort cmp decls))
+      let rec cmp a b =
+        match split a, split b with
+        | Some (stem_a, tail_a), Some (stem_b, tail_b) ->
+          begin
+            match String.compare stem_a stem_b with
+            | 0 -> cmp tail_a tail_b
+            | n -> n
+          end
+        | _ -> String.compare a b
+      in
+      let cmp_decls (a, _, _) (b, _, _) = cmp a b in
+      Statement (Ruleset (selectors, List.stable_sort cmp_decls decls))
     | v -> v
   end
 
