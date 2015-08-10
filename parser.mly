@@ -266,7 +266,7 @@ pseudo_class:
   | DOUBLE_COLON id=IDENT
   { `Pseudo_element (String.lowercase id) }
 function_arg:
-  | s=selector
+  | s=simple_selector
   { Nested_selector s }
   | EVEN
   { Nth Even }
