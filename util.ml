@@ -142,7 +142,7 @@ let transform_stylesheet f stylesheet =
     | Pseudo_class (base, cls, None) ->
       f (Selector (Pseudo_class (expect_selector base, cls, None)))
     | Pseudo_class (base, fn, Some args) ->
-      let args = trav_all_selector args in
+      let args = trav_all_pseudo_class_arg args in
       f (Selector (Pseudo_class (expect_selector base, fn, Some args)))
     | Pseudo_element (base, elem) ->
       f (Selector (Pseudo_element (expect_selector base, elem)))
@@ -151,7 +151,14 @@ let transform_stylesheet f stylesheet =
       let right = expect_selector right in
       f (Selector (Combinator (left, com, right)))
   and EXPECT(selector, Selector)
-  and TRAV_ALL(selector, Selector) in
+  and TRAV_ALL(selector, Selector)
+
+  and trav_pseudo_class_arg = function
+    | Nested_selector s ->
+      f (Pseudo_class_arg (Nested_selector (expect_selector s)))
+    | Nth _ as elem ->
+      f (Pseudo_class_arg elem)
+  and TRAV_ALL(pseudo_class_arg, Pseudo_class_arg) in
 
   let trav_media_expr = function
     | (_, None) as value ->
@@ -230,11 +237,11 @@ let transform_stylesheet f stylesheet =
 
   trav_all_statement stylesheet
 
-(* Expression identification *)
+(** Expression identification *)
 
 let is_color = Color_names.is_color
 
-(* Sorting declarations *)
+(** Sorting declarations *)
 
 let sort_stylesheet =
   transform_stylesheet begin function
@@ -247,3 +254,6 @@ let sort_stylesheet =
       Statement (Ruleset (selectors, List.stable_sort cmp decls))
     | v -> v
   end
+
+(** Misc *)
+let is_int n = float_of_int (int_of_float n) = n

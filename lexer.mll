@@ -114,12 +114,25 @@ rule token = parse
   | (s | comment)* s comment* O R   comment* s (s | comment)*
   { advance_pos lexbuf; WS_OR }
 
+  | (['-' '+'] as a_sign)? (['0'-'9']* as a) N
+    (w (['-' '+'] as b_sign) w (['0'-'9']+ as b))?
+  {
+    let a = if a = "" then 1 else int_of_string a in
+    let b = match b with None -> 0 | Some n -> int_of_string n in
+    let apply_sign n = function Some '-' -> -n | _ -> n in
+    let a = apply_sign a a_sign in
+    let b = apply_sign b b_sign in
+    FORMULA (a, b)
+  }
+
   | O N L Y             { ONLY }
   | N O T               { NOT }
   | A N D               { AND }
   (*| O R                 { OR } removed in favor of WS_OR *)
   | F R O M             { FROM }
   | T O                 { TO }
+  | O D D               { ODD }
+  | E V E N             { EVEN }
 
   | ident as id         { IDENT id }
 

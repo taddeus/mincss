@@ -62,7 +62,8 @@
 %token <string> URI FUNCTION
 %token LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMICOL COLON DOUBLE_COLON
 %token COMMA DOT PLUS MINUS SLASH STAR ONLY AND (*OR*) NOT FROM TO EOF
-%token WS_AND WS_OR
+%token WS_AND WS_OR ODD EVEN
+%token <int * int> FORMULA
 
 (* Start symbol *)
 %type <Types.stylesheet> stylesheet
@@ -241,10 +242,8 @@ simple_selector:
   | addons=element_addon+
   { append_addons No_element addons }
 %inline element_addon:
-  | id=HASH       { `Id id }
-  | addon=cls
-  | addon=attrib
-  | addon=pseudo  { addon }
+  | id=HASH  { `Id id }
+  | addon=cls | addon=attrib | addon=pseudo_class  { addon }
 element_name:
   | tag=IDENT  { Element (String.lowercase tag) }
   | STAR       { All_elements }
@@ -259,13 +258,32 @@ attrib:
 %inline rel_value:
   | S* id=IDENT S*  { Ident id }
   | S* s=STRING S*  { Strlit s }
-pseudo:
+pseudo_class:
   | COLON id=IDENT
   { `Pseudo_class (String.lowercase id, None) }
-  | COLON f=FUNCTION args=wslist(COMMA, simple_selector) RPAREN
+  | COLON f=FUNCTION args=wslist(COMMA, function_arg) RPAREN
   { `Pseudo_class (String.lowercase f, Some args) }
   | DOUBLE_COLON id=IDENT
   { `Pseudo_element (String.lowercase id) }
+function_arg:
+  | s=selector
+  { Nested_selector s }
+  | EVEN
+  { Nth Even }
+  | ODD
+  { Nth Odd }
+  | f=FORMULA
+  { let a, b = f in Nth (Formula (a, b)) }
+  | sign=sign? n=NUMBER
+  {
+    if is_int n then begin
+      let b = int_of_float (match sign with Some MINUS -> -.n | _ -> n) in
+      Nth (Formula (0, b))
+    end else
+      raise (Syntax_error ("unexpected float '" ^ string_of_float n ^
+                           "', expected int"))
+  }
+%inline sign: PLUS { PLUS } | MINUS { MINUS }
 
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))

@@ -18,16 +18,17 @@ type selector =
   | Element of string
   | Id of selector * string
   | Class of selector * string
-  | Pseudo_class of selector * string * selector list option
+  | Pseudo_class of selector * string * pseudo_class_arg list option
   | Pseudo_element of selector * string
   | Attribute of selector * string * (string * expr) option
   | Combinator of selector * string * selector
-
-  (*
-type selector =
-  | Simple of string
-  | Combinator of selector * string * selector
-  *)
+and pseudo_class_arg =
+  | Nested_selector of selector
+  | Nth of nth
+and nth =
+  | Even | Odd
+  (* a and b in an+b *)
+  | Formula of int * int
 
 type media_expr = string * expr option
 type media_query = string option * string option * media_expr list
@@ -73,6 +74,7 @@ type box =
   | Expr of expr
   | Declaration of declaration
   | Selector of selector
+  | Pseudo_class_arg of pseudo_class_arg
   | Media_expr of media_expr
   | Media_query of media_query
   | Descriptor_declaration of descriptor_declaration

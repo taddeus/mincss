@@ -1,6 +1,7 @@
+open Str
 open Types
 
-let hex6 = Str.regexp "\\([0-9a-f]\\)\\1\\([0-9a-f]\\)\\2\\([0-9a-f]\\)\\3"
+let hex6 = regexp "\\([0-9a-f]\\)\\1\\([0-9a-f]\\)\\2\\([0-9a-f]\\)\\3"
 
 let is_num = function
   | Number (n, (None | Some "%")) -> true
@@ -14,8 +15,8 @@ let clip = function
 
 let rec shorten_expr = function
   (* #aabbcc -> #abc *)
-  | Hexcolor h when Str.string_match hex6 h 0 ->
-    let gr n = Str.matched_group n h in
+  | Hexcolor h when string_match hex6 h 0 ->
+    let gr n = matched_group n h in
     shorten_expr (Hexcolor (gr 1 ^ gr 2 ^ gr 3))
 
   (* rgb(r,g,b) -> #rrggbb *)
@@ -50,12 +51,32 @@ let shorten_font_weight = function
   | Ident "bold"   -> Number (700.0, None)
   | v -> v
 
+let shorten_nth = function
+  (* even -> 2n *)
+  | Even                  -> Formula (2, 0)
+  (* 2n+1 | 2n-1 -> odd *)
+  | Formula (2, (1 | -1)) -> Odd
+  (* -n+1 -> 1 *)
+  | Formula (-1, 1)       -> Formula (0, 1)
+  | v -> v
+
 let compress =
   Util.transform_stylesheet begin function
-    | Expr value -> Expr (shorten_expr value)
+    | Expr value ->
+      Expr (shorten_expr value)
     | Declaration ("font-weight", value, imp) ->
       Declaration ("font-weight", shorten_font_weight value, imp)
     | Declaration (("border" | "outline") as name, Ident "none", imp) ->
       Declaration (name, Number (0., None), imp)
+    | Pseudo_class_arg (Nth nth) ->
+      Pseudo_class_arg (Nth (shorten_nth nth))
+    (* Remove rulesets with :nth-child(0) selector *)
+    | Selector (Pseudo_class (_, cls, Some [Nth (Formula (0, 0))]))
+      when string_match (regexp "nth-") cls 0 ->
+      Clear
+    (* Remove rulesets with no selectors or declarations *)
+    | Statement (Ruleset ([], _))
+    | Statement (Ruleset (_, [])) ->
+      Clear
     | v -> v
   end

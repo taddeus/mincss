@@ -17,7 +17,7 @@ let rec cat sep fn = function
  *)
 
 let string_of_num n =
-  if float_of_int (int_of_float n) = n
+  if is_int n
     then string_of_int (int_of_float n)
     else string_of_float n
 
@@ -57,13 +57,34 @@ let rec stringify_selector w selector =
   | Pseudo_class (base, cls, None) ->
     str base ^ ":" ^ cls
   | Pseudo_class (base, fn, Some args) ->
-    str base ^ ":" ^ fn ^ "(" ^ cat ("," ^ w) str args ^ ")"
+    str base ^ ":" ^ fn ^ "(" ^ cat ("," ^ w) (stringify_arg w) args ^ ")"
   | Pseudo_element (base, elem) ->
     str base ^ "::" ^ elem
   | Combinator (left, " ", right) ->
     str left ^ " " ^ str right
   | Combinator (left, com, right) ->
     str left ^ w ^ com ^ w ^ str right
+
+and stringify_arg w = function
+  | Nested_selector s -> stringify_selector w s
+  | Nth nth -> stringify_nth w nth
+
+and stringify_nth w = function
+  | Even           -> "even"
+  | Odd            -> "odd"
+  | Formula (0, b) -> string_of_int b
+  | Formula (a, b) ->
+    begin
+      match a with
+      | 1  -> "n"
+      | -1 -> "-n"
+      | a  -> string_of_int a ^ "n"
+    end ^ begin
+      match b with
+      | 0            -> ""
+      | b when b < 0 -> w ^ "-" ^ w ^ string_of_int (-b)
+      | b            -> w ^ "+" ^ w ^ string_of_int b
+    end
 
 let string_of_selector = stringify_selector " "
 

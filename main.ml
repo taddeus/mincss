@@ -27,7 +27,7 @@ let parse_args () =
      Optimization flags (if none are specified, all are enabled):\n \
      -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest \
                        effect, omit for pretty-printing)\n \
-     -c, --simple      Shorten colors and font weights\n \
+     -c, --simple      Shorten colors, font weights and nth-child\n \
      -s, --shorthands  Generate shorthand properties\n \
      -d, --duplicates  Prune duplicate properties (WARNING: may affect \
                        cross-browser hacks)\n \
