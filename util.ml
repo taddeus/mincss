@@ -264,7 +264,7 @@ let sort_stylesheet =
           String.compare stem_a b
         | None, Some (stem_b, tail_b) ->
           String.compare a stem_b
-        | _ ->
+        | None, None ->
           String.compare a b
       in
       let cmp_decls (a, _, _) (b, _, _) = cmp a b in
