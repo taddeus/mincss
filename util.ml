@@ -254,18 +254,15 @@ let sort_stylesheet =
       in
       let rec cmp a b =
         match split a, split b with
-        | Some (stem_a, tail_a), Some (stem_b, tail_b) ->
-          begin
-            match String.compare stem_a stem_b with
-            | 0 -> cmp tail_a tail_b
-            | n -> n
-          end
-        | Some (stem_a, tail_a), None ->
-          String.compare stem_a b
-        | None, Some (stem_b, tail_b) ->
-          String.compare a stem_b
-        | None, None ->
-          String.compare a b
+        | Some (base_a, sub_a), Some (base_b, sub_b) when base_a = base_b ->
+          cmp sub_a sub_b
+        | Some (base_a, _), Some (base_b, _) ->
+          String.compare base_a base_b
+        | Some (base_a, _), None when base_a = b -> 1
+        | Some (base_a, _), None -> String.compare base_a b
+        | None, Some (base_b, _) when a = base_b -> -1
+        | None, Some (base_b, _) -> String.compare a base_b
+        | None, None -> String.compare a b
       in
       let cmp_decls (a, _, _) (b, _, _) = cmp a b in
       Statement (Ruleset (selectors, List.stable_sort cmp_decls decls))

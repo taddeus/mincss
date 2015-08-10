@@ -4,10 +4,16 @@
 
 open Types
 open Util
-module SS = Set.Make(String)
 
-let pattern = Str.regexp ("^\\(background\\|border\\|font\\|list-style" ^
-                          "\\|outline\\|padding\\|margin\\)-\\(.*\\)$")
+module KM = Map.Make(struct
+  type t = string * bool
+  let compare a b =
+    match a, b with
+    | (_, false), (_, true)    -> -1
+    | (_, true), (_, false)    -> 1
+    | (base_a, _), (base_b, _) -> String.compare base_a base_b
+end)
+
 
 let order = function
   | "background" -> ["color"; "image"; "repeat"; "attachment"; "position-x";
@@ -20,74 +26,68 @@ let order = function
   | "padding"    -> ["top"; "right"; "bottom"; "left"]
   | _            -> failwith "not a shorthand property"
 
-let rec decls_mem name = function
-  | [] -> false
-  | (nm, _, _) :: _ when nm = name -> true
-  | _ :: tl -> decls_mem name tl
-
-(* find the value of the last declaration of some property (since the earlier
- * values are overridden), unless an earlier !important value was found *)
-let decls_find name decls =
-  let rec wrap known must_be_imp = function
-    | [] ->
-      known
-    | (nm, value, false) :: tl when nm = name && not must_be_imp ->
-      wrap (Some value) false tl
-    | (nm, value, true) :: tl when nm = name ->
-      wrap (Some value) true tl
-    | _ :: tl ->
-      wrap known must_be_imp tl
-  in
-  match wrap None false decls with
-  | None -> raise Not_found
-  | Some value -> value
-
-let fold base decls =
-  let rec filter = function
-    | [] -> []
-
-    (* `font-size` and `line-height` are slash-separated in `font` *)
-    | "size" :: tl when base = "font" && decls_mem "line-height" decls ->
-      let font_size = decls_find "font-size" decls in
-      let line_height = decls_find "line-height" decls in
-      Nary ("/", [font_size; line_height]) :: filter tl
-
-    | name :: tl when decls_mem (base ^ "-" ^ name) decls ->
-      decls_find (base ^ "-" ^ name) decls :: filter tl
-
-    | _ :: tl -> filter tl
-  in
-  filter (order base)
-
-let shorten_box_dims = function
+let fold_box_dims = function
   | [top; right; bottom; left]
     when top = bottom && right = left && top = right -> [top]
   | [top; right; bottom; left] when top = bottom && right = left -> [top; right]
   | [top; right; bottom; left] when right = left -> [top; right; bottom]
   | dims -> dims
 
-let shorten decls = function
+let fold group base =
+  let group_mem name =
+    let rec mem = function
+      | [] -> false
+      | (nm, _, _) :: _ when nm = name -> true
+      | _ :: tl -> mem tl
+    in
+    mem group
+  in
+
+  let group_find name =
+    let rec wrap known = function
+      | [] ->
+        (match known with Some value -> value | None -> raise Not_found)
+      | (nm, value, _) :: tl when nm = name ->
+        wrap (Some value) tl
+      | _ :: tl ->
+        wrap known tl
+    in
+    wrap None group
+  in
+
+  let exists sub = group_mem (base ^ "-" ^ sub) in
+  let find sub = group_find (base ^ "-" ^ sub) in
+
+  let rec lookup = function
+    | [] -> []
+    (* `font-size` and `line-height` are slash-separated in `font` *)
+    | "size" :: tl when base = "font" && group_mem "line-height" ->
+      Nary ("/", [find "size"; group_find "line-height"]) :: lookup tl
+    | name :: tl when exists name -> find name :: lookup tl
+    | _ :: tl -> lookup tl
+  in
+
+  match base with
+
   (* `font-size` and `font-family` are required for `font` *)
-  | "font" when decls_mem "font-size" decls && decls_mem "font-family" decls ->
-    Some (Concat (fold "font" decls))
+  | "font" when exists "size" && exists "family" ->
+    Some (Concat (lookup (order "font")))
 
   (* `border-style` is required for `border` *)
-  | "border" when decls_mem "border-style" decls ->
-    Some (Concat (fold "border" decls))
+  | "border" when exists "style" ->
+    Some (Concat (lookup (order "border")))
 
-  (* others require at least one property, which is the case when this function
-   * is called *)
+  (* others require at least one property, which is already the case when this
+   * function is called *)
   | ("background" | "list-style" | "outline") as base ->
-    Some (Concat (fold base decls))
+    Some (Concat (lookup (order base)))
 
   (* margin and padding can only be shorthanded when all directions are known,
-   * merging into even shorter shorthands is done by `shorten_box_dims` *)
-  | ("margin" | "padding") as base when
-      let has dir = decls_mem (base ^ "-" ^ dir) decls in
-      has "top" && has "right" && has "bottom" && has "left" ->
-    let get dir = decls_find (base ^ "-" ^ dir) decls in
-    Some (Concat (shorten_box_dims [get "top"; get "right";
-                                    get "bottom"; get "left"]))
+   * merging into even shorter shorthands is done by `fold_box_dims` *)
+  | "margin" | "padding"
+    when exists "top" && exists "right" && exists "bottom" && exists "left" ->
+    let dirs = [find "top"; find "right"; find "bottom"; find "left"] in
+    Some (Concat (fold_box_dims dirs))
 
   | _ -> None
 
@@ -234,45 +234,57 @@ let rec unfold = function
   | hd :: tl ->
     hd :: unfold tl
 
-let make_shorthands decls =
+let pattern = Str.regexp ("^\\(background\\|border\\|font\\|list-style" ^
+                          "\\|outline\\|padding\\|margin\\)-\\(.*\\)$")
+
+let rec make_shorthands decls =
   (* unfold currently existing shorthands into separate properties for merging
    * with override properties that are defined later on *)
   (*let decls = unfold decls in
     XXX: done by main function for correct pruning of duplicate declarations*)
 
-  (* find shorthand names for which properties are present *)
-  let rec find_props = function
-    | [] -> SS.empty
-    | (name, value, false) :: tl when Str.string_match pattern name 0 ->
+  let rec extract_groups decl_skipped groups rest =
+    let rec find_in_group name = function
+      | [] -> false
+      | (nm, _, _) :: _ when nm = name -> true
+      | _ :: tl -> find_in_group name tl
+    in
+    let should_skip base name imp =
+      try find_in_group name (KM.find (base, imp) groups)
+      with Not_found -> false
+    in
+    let add base imp value =
+      let key = base, imp in
+      let group = try KM.find key groups with Not_found -> [] in
+      KM.add key (value :: group) groups
+    in
+    function
+    | [] -> decl_skipped, groups, rest
+    | (("line-height", _, imp) as hd) :: tl
+      when should_skip "font" "line_height" imp ->
+      extract_groups true groups (hd :: rest) tl
+    | (("line-height", _, imp) as hd) :: tl ->
+      extract_groups decl_skipped (add "font" imp hd) rest tl
+    | ((name, _, imp) as hd) :: tl when Str.string_match pattern name 0 ->
       let base = Str.matched_group 1 name in
       let sub = Str.matched_group 2 name in
-      if List.mem sub (order base)
-        then SS.add base (find_props tl)
-        else find_props tl
-    | _ :: tl -> find_props tl
+      let skip_this = should_skip base name imp in
+      if not skip_this && List.mem sub (order base)
+        then extract_groups decl_skipped (add base imp hd) rest tl
+        else extract_groups (decl_skipped || skip_this) groups (hd :: rest) tl
+    | hd :: tl -> extract_groups decl_skipped groups (hd :: rest) tl
   in
-  let try_shorthands = find_props decls in
+  let decl_skipped, groups, rest = extract_groups false KM.empty [] decls in
 
-  (* try to generate shorthands for the matched base properties *)
-  let rec replace base tl =
-    match shorten decls base with
-    | None -> tl
-    | Some short_value -> (base, short_value, false) :: tl
+  let replace (base, important) group tl =
+    match fold (List.rev group) base with
+    | Some short_value -> (base, short_value, important) :: tl
+    | None -> group @ tl
   in
-  let shorthands = SS.fold replace try_shorthands [] in
+  let shorthands = KM.fold replace groups [] in
 
-  (* filter out the original, partial properties, and append the shorthands *)
-  let keep_prop = function
-    | ("line-height", _, _) ->
-      not (decls_mem "font" shorthands)
-    | (name, _, important) ->
-      important ||
-      not (Str.string_match pattern name 0) ||
-      let base = Str.matched_group 1 name in
-      let sub = Str.matched_group 2 name in
-      not (List.mem sub (order base)) || not (decls_mem base shorthands)
-  in
-  List.filter keep_prop decls @ shorthands
+  let decls = List.rev_append rest shorthands in
+  if decl_skipped then make_shorthands decls else decls
 
 let compress =
   Util.transform_stylesheet begin function
