@@ -35,7 +35,7 @@ let parse_args () =
      \n\
      Formatting options:\n \
      -r, --sort        Sort declarations in each ruleset (always on when \
-                       --shorthands is enabled)\n\
+                       --shorthands is enabled)\n \
      -e, --echo        Just parse and pretty-print, no optimizations\n\
      "
   in
