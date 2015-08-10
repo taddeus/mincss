@@ -85,7 +85,7 @@ let parse_args () =
         | i when i = String.length arg -> args
         | i -> handle_opts (handle args ["-" ^ String.make 1 arg.[i]]) (i + 1)
       in
-      handle_opts args 1
+      handle (handle_opts args 1) tl
 
     | arg :: tl when arg.[0] = '-' ->
       prerr_string usage;
