@@ -117,7 +117,6 @@ let rec unfold = function
       | [] -> []
       | [color] when Color_names.is_color color -> [make "color" color]
       | tl -> raise (Box_error (Expr (Concat tl), "invalid background shortcut"))
-      (*| _ -> failwith "invalid background shortcut"*)
     in
     let id_repeat = function
       | repeat :: (Uri _ as image) :: tl ->
@@ -279,7 +278,7 @@ let rec make_shorthands decls =
   let replace (base, important) group tl =
     match fold (List.rev group) base with
     | Some short_value -> (base, short_value, important) :: tl
-    | None -> group @ tl
+    | None -> List.rev_append group tl
   in
   let shorthands = KM.fold replace groups [] in
 
