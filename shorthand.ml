@@ -111,7 +111,7 @@ let rec unfold = function
     orig :: unfold tl
 
   (* background: [color] [image] [repeat] [attachment] [position] *)
-  | ("background", Concat values, imp) :: tl ->
+  | (("background", Concat values, imp) as orig) :: tl ->
     let make sub value = ("background-" ^ sub, value, imp) in
     let id_color = function
       | [] -> []
@@ -140,7 +140,11 @@ let rec unfold = function
         make "position-y" posy :: make "position-x" posx :: id_attachment tl
       | tl -> id_attachment tl
     in
-    List.rev (id_pos (List.rev values)) @ unfold tl
+    begin
+      try List.rev_append (id_pos (List.rev values)) (unfold tl)
+      (* instead of crashing, just don't unfold malformed shorthands *)
+      with Box_error _ -> orig :: unfold tl
+    end
   | ("background", (Uri _ as image), imp) :: tl ->
     ("background-image", image, imp) :: unfold tl
   | ("background", color, imp) :: tl ->
