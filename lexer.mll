@@ -120,9 +120,7 @@ rule token = parse
     let a = if a = "" then 1 else int_of_string a in
     let b = match b with None -> 0 | Some n -> int_of_string n in
     let apply_sign n = function Some '-' -> -n | _ -> n in
-    let a = apply_sign a a_sign in
-    let b = apply_sign b b_sign in
-    FORMULA (a, b)
+    FORMULA (apply_sign a a_sign, apply_sign b b_sign)
   }
 
   | O N L Y             { ONLY }

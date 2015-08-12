@@ -29,10 +29,9 @@ let rec specificity =
 
 let precedes (a, b, c, d) (e, f, g, h) =
   let rec loop = function
-    | []                -> true
-    | 0 :: tl           -> loop tl
-    | n :: _ when n > 0 -> true
-    | _                 -> false
+    | 0 :: tl                -> loop tl
+    | [] | n :: _ when n > 0 -> true
+    | _                      -> false
   in
   loop [a - e; b - f; c - g; d - h]
 
@@ -64,8 +63,7 @@ let can_match_same selector1 selector2 =
   in
   let rec intersect l = function
     | [] -> false
-    | hd :: _ when List.mem hd l -> true
-    | _ :: tl -> intersect l tl
+    | hd :: tl -> List.mem hd l || intersect l tl
   in
   let elem1, classes1, ids1, pseudos1, attrs1 = unfold selector1 in
   let elem2, classes2, ids2, pseudos2, attrs2 = unfold selector2 in
