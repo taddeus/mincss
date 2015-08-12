@@ -27,8 +27,8 @@ and pseudo_class_arg =
   | Nth of nth
 and nth =
   | Even | Odd
-  (* a and b in an+b *)
   | Formula of int * int
+  (* a and b in an+b *)
 
 type media_expr = string * expr option
 type media_query = string option * string option * media_expr list

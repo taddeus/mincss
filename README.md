@@ -131,3 +131,4 @@ TODO / bugs
   it is better than putting everything at the end.
 - `border:none` could be `border:0`, or in general any shorthand that has both
   a `style` and `width` property should be transformed from `none` into `0`.
+- Automated test suite: auto-diff css files and expected minified versions.
