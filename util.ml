@@ -116,6 +116,12 @@ let prerr_loc_msg loc msg =
     | _ -> failwith ("expected " ^ #constructor)
 
 let transform_stylesheet f stylesheet =
+  let f x =
+    match f x with
+    | Expr (Concat [expr] | Nary (_, [expr])) -> Expr expr
+    | value -> value
+  in
+
   let rec trav_expr = function
     | Concat terms -> f (Expr (Concat (trav_all_expr terms)))
     | Function (name, arg) -> f (Expr (Function (name, expect_expr arg)))

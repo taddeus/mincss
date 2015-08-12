@@ -151,9 +151,9 @@ let handle_args args =
     (* unfold before pruning duplicates so that shorthand components are
      * correctly pruned *)
     |> switch args.shorthands Shorthand.unfold_stylesheet
-    |> switch args.simple Simple.compress
     |> switch args.duplicates Duplicates.compress
     |> switch args.shorthands Shorthand.compress
+    |> switch args.simple Simple.compress
     |> switch args.sort Util.sort_stylesheet
   in
   let output =
