@@ -76,21 +76,22 @@ Output of `mincss -h`:
     Usage: mincss [<options>] [<file> ...]
 
     Generic options:
-     -h, --help        Show this help message
-     -v, --verbose     Verbose mode: show compression rate
-     -o <file>         Output file (defaults to stdout)
-     <file> ...        Input files (default is to read from stdin)
+    -h, --help        Show this help message
+    -v, --verbose     Verbose mode: show compression rate
+    -o <file>
+    --output=<file>   Output file (defaults to stdout)
+    <file> ...        Input files (defaults to stdin or "-")
 
     Optimization flags (default is -w -c -s -d):
-     -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest effect, omit for pretty-printing)
-     -c, --simple      Shorten colors, font weights and nth-child
-     -s, --shorthands  Generate shorthand properties
-     -d, --duplicates  Prune duplicate properties (WARNING: may affect cross-browser hacks)
-     -p, --pretty      Shorthand for -c -s -d
+    -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest effect, omit for pretty-printing)
+    -c, --simple      Shorten colors, font weights and nth-child
+    -s, --shorthands  Generate shorthand properties
+    -d, --duplicates  Prune duplicate properties (WARNING: may affect cross-browser hacks)
+    -p, --pretty      Shorthand for -c -s -d
 
     Formatting options:
-     -r, --sort        Sort declarations in each ruleset (always on when --shorthands is enabled)
-     -e, --echo        Just parse and pretty-print, no optimizations
+    -r, --sort        Sort declarations in each ruleset (always on when --shorthands is enabled)
+    -e, --echo        Just parse and pretty-print, no optimizations
 
 
 Building mincss
