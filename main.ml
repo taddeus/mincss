@@ -81,7 +81,7 @@ let parse_args () =
     | "-o" :: filename :: tl ->
       handle {args with outfile = Some filename} tl
 
-    | arg :: tl when String.length arg > 1 && arg.[0] = '-' && arg.[1] <> '-' ->
+    | arg :: tl when String.length arg > 2 && arg.[0] = '-' && arg.[1] <> '-' ->
       let rec handle_opts args = function
         | i when i = String.length arg -> args
         | i -> handle_opts (handle args ["-" ^ String.make 1 arg.[i]]) (i + 1)
@@ -89,7 +89,7 @@ let parse_args () =
       handle (handle_opts args 1) tl
 
     | arg :: tl when arg.[0] = '-' ->
-      prerr_string usage;
+      prerr_endline usage;
       raise (Failure ("unknown option " ^ arg))
 
     | filename :: tl ->
