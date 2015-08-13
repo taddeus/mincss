@@ -96,12 +96,13 @@ Output of `mincss -h`:
 Building mincss
 ===============
 
-Dependencies are [OCaml](https://ocaml.org/docs/install.html) 4.0 and
-[menhir](http://cristal.inria.fr/~fpottier/menhir/).
+Dependencies are [OCaml](https://ocaml.org/docs/install.html) 4.02.0,
+[menhir](http://cristal.inria.fr/~fpottier/menhir/) and
+[Getopt](https://forge.ocamlcore.org/projects/ocaml-getopt/).
 
 Bootstrapping on a Debian system can be done as follows:
 
-    $ sudo apt-get install ocaml menhir git
+    $ sudo apt-get install ocaml menhir libgetopt-ocaml-dev git
     $ git clone git@github.com:taddeus/mincss.git
     $ cd mincss
     $ make
@@ -115,7 +116,7 @@ flexibility:
     $ eval `opam config env`
     $ opam switch 4.02.0
     $ opam update
-    $ opam install menhir
+    $ opam install menhir getopt
 
 
 TODO / bugs
@@ -132,3 +133,4 @@ TODO / bugs
 - `border:none` could be `border:0`, or in general any shorthand that has both
   a `style` and `width` property should be transformed from `none` into `0`.
 - Automated test suite: auto-diff css files and expected minified versions.
+- `mincss -s test/duplicates.css` gets stuck in an infinite loop.

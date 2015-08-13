@@ -9,103 +9,88 @@ type args = {
   simple     : bool;
   shorthands : bool;
   duplicates : bool;
-  echo       : bool;
   sort       : bool;
 }
 
+let usage =
+  "Usage: " ^ Sys.argv.(0) ^
+  " [<options>] [<file> ...]\n\
+   \n\
+   Generic options:\n \
+   -h, --help        Show this help message\n \
+   -v, --verbose     Verbose mode: show compression rate\n \
+   -o <file>\n \
+   --output=<file>   Output file (defaults to stdout)\n \
+   <file> ...        Input files (defaults to stdin or \"-\")\n\
+   \n\
+   Optimization flags (default is -w -c -s -d):\n \
+   -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest \
+                     effect, omit for pretty-printing)\n \
+   -c, --simple      Shorten colors, font weights and nth-child\n \
+   -s, --shorthands  Generate shorthand properties\n \
+   -d, --duplicates  Prune duplicate properties (WARNING: may affect \
+                     cross-browser hacks)\n \
+   -p, --pretty      Shorthand for -c -s -d\n \
+   \n\
+   Formatting options:\n \
+   -r, --sort        Sort declarations in each ruleset (always on when \
+                     --shorthands is enabled)\n \
+   -e, --echo        Just parse and pretty-print, no optimizations\n\
+   "
+
 let parse_args () =
-  let usage =
-    "Usage: " ^ Sys.argv.(0) ^
-    " [<options>] [<file> ...]\n\
-     \n\
-     Generic options:\n \
-     -h, --help        Show this help message\n \
-     -v, --verbose     Verbose mode: show compression rate\n \
-     -o <file>         Output file (defaults to stdout)\n \
-     <file> ...        Input files (default is to read from stdin)\n\
-     \n\
-     Optimization flags (default is -w -c -s -d):\n \
-     -w, --whitespace  Eliminate unnecessary whitespaces (has the greatest \
-                       effect, omit for pretty-printing)\n \
-     -c, --simple      Shorten colors, font weights and nth-child\n \
-     -s, --shorthands  Generate shorthand properties\n \
-     -d, --duplicates  Prune duplicate properties (WARNING: may affect \
-                       cross-browser hacks)\n \
-     -p, --pretty      Shorthand for -c -s -d\n \
-     \n\
-     Formatting options:\n \
-     -r, --sort        Sort declarations in each ruleset (always on when \
-                       --shorthands is enabled)\n \
-     -e, --echo        Just parse and pretty-print, no optimizations\n\
-     "
+  let infiles    = ref [] in
+  let outfile    = ref None in
+  let verbose    = ref false in
+  let whitespace = ref false in
+  let simple     = ref false in
+  let shorthands = ref false in
+  let duplicates = ref false in
+  let sort       = ref false in
+  let echo       = ref false in
+
+  let show_usage () = prerr_string usage; raise Exit_success in
+  let set_pretty () = simple := true; shorthands := true; duplicates := true in
+  let add_infile  = function
+    | "-"      -> infiles := []
+    | filename -> infiles := filename :: !infiles
   in
 
-  let default_args = {
-    infiles    = [];
-    outfile    = None;
-    verbose    = false;
-    whitespace = false;
-    simple     = false;
-    shorthands = false;
-    duplicates = false;
-    echo       = false;
-    sort       = false;
-  } in
+  let specs = [
+    ('h', "help",       Some show_usage, None);
+    ('v', "verbose",    Getopt.set verbose true, None);
+    ('o', "output",     None, Some (fun file -> outfile := Some file));
+    ('w', "whitespace", Getopt.set whitespace true, None);
+    ('c', "simple",     Getopt.set simple true, None);
+    ('s', "shorthands", Getopt.set shorthands true, None);
+    ('d', "duplicates", Getopt.set duplicates true, None);
+    ('p', "pretty",     Some set_pretty, None);
+    ('r', "sort",       Getopt.set sort true, None);
+    ('e', "echo",       Getopt.set echo true, None);
+  ] in
 
-  let rec handle args = function
-    | ("-v" | "--verbose") :: tl ->
-      handle {args with verbose = true} tl
-    | ("-w" | "--whitespace") :: tl ->
-      handle {args with whitespace = true} tl
-    | ("-c" | "--simple") :: tl ->
-      handle {args with simple = true} tl
-    | ("-s" | "--shorthands") :: tl ->
-      handle {args with shorthands = true} tl
-    | ("-d" | "-duplicates") :: tl ->
-      handle {args with duplicates = true} tl
-    | ("-p" | "--pretty") :: tl ->
-      handle {args with simple = true; shorthands = true; duplicates = true} tl
-    | ("-e" | "--echo") :: tl ->
-      handle {args with echo = true} tl
-    | ("-r" | "--sort") :: tl ->
-      handle {args with sort = true} tl
+  Getopt.parse_cmdline specs add_infile;
 
-    | ("-h" | "--help") :: tl ->
-      prerr_string usage;
-      raise Exit_success
+  match {
+    infiles    = List.rev !infiles;
+    outfile    = !outfile;
+    verbose    = !verbose;
+    whitespace = !whitespace;
+    simple     = !simple;
+    shorthands = !shorthands;
+    duplicates = !duplicates;
+    sort       = !sort;
+  } with
 
-    | ["-o"] ->
-      raise (Failure ("missing output file name"))
-    | "-o" :: next :: tl when next.[0] = '-' ->
-      raise (Failure ("missing output file name"))
-    | "-o" :: filename :: tl ->
-      handle {args with outfile = Some filename} tl
-
-    | arg :: tl when String.length arg > 2 && arg.[0] = '-' && arg.[1] <> '-' ->
-      let rec handle_opts args = function
-        | i when i = String.length arg -> args
-        | i -> handle_opts (handle args ["-" ^ String.make 1 arg.[i]]) (i + 1)
-      in
-      handle (handle_opts args 1) tl
-
-    | arg :: tl when arg.[0] = '-' ->
-      prerr_endline usage;
-      raise (Failure ("unknown option " ^ arg))
-
-    | filename :: tl ->
-      handle {args with infiles = args.infiles @ [filename]} tl
-
-    | [] -> args
-  in
-
-  match handle default_args (List.tl (Array.to_list Sys.argv)) with
-  | { echo = true; _ } as args ->
+  (* disable optimizations when --echo is specified *)
+  | args when !echo = true ->
     { args with
       whitespace = false;
       simple     = false;
       shorthands = false;
       duplicates = false }
 
+  (* enable all optimizations by default *)
   | { whitespace = false;
       simple     = false;
       shorthands = false;
@@ -181,6 +166,9 @@ let main () =
       Util.prerr_loc_msg loc ("Error: " ^ msg);
     | Box_error (box, msg) ->
       prerr_endline ("Error: " ^ msg ^ ": " ^ Stringify.string_of_box box);
+    | Getopt.Error msg ->
+      prerr_endline ("Error: " ^ msg ^ "\n");
+      prerr_string usage;
     | Failure msg ->
       prerr_endline ("Error: " ^ msg);
     | Exit_success ->

@@ -10,6 +10,7 @@ OCAMLLDLIBS  := str.cmxa
 
 OCAMLLEX  := ocamllex
 OCAMLYACC := menhir --infer --explain --dump
+OCAMLOPT_GETOPT := ocamlfind opt -linkpkg -package getopt
 
 .PHONY: all clean
 .PRECIOUS: $(addprefix .cmi,$(ALL_NAMES))
@@ -28,8 +29,11 @@ all: $(RESULT)
 %.cmx: %.ml
 	ocamlopt -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
 
+main.cmx: main.ml
+	$(OCAMLOPT_GETOPT) -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
+
 $(RESULT): $(addsuffix .cmx,$(ALL_NAMES))
-	ocamlopt -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
+	$(OCAMLOPT_GETOPT) -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
 
 # module dependencies
 lexer.cmi: lexer.ml
