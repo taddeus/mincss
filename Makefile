@@ -5,12 +5,12 @@ MODULES   := color_names util stringify parser lexer parse simple shorthand \
 ALL_NAMES := $(PRE_TGTS) $(MODULES)
 
 OCAMLCFLAGS  := -g
-OCAMLLDFLAGS :=
-OCAMLLDLIBS  := str.cmxa
+RESULTLDLIBS = getopt str
+OCAMLLDFLAGS = $(if $(OCAMLLDLIBS),-linkpkg) \
+			   $(addprefix -package ,$(OCAMLLDLIBS))
 
 OCAMLLEX  := ocamllex
 OCAMLYACC := menhir --infer --explain --dump
-OCAMLOPT_GETOPT := ocamlfind opt -linkpkg -package getopt
 
 .PHONY: all clean
 .PRECIOUS: $(addprefix .cmi,$(ALL_NAMES))
@@ -27,19 +27,17 @@ all: $(RESULT)
 	ocamlc -c $(OCAMLCFLAGS) -o $@ $<
 
 %.cmx: %.ml
-	ocamlopt -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
-
-main.cmx: main.ml
-	$(OCAMLOPT_GETOPT) -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
+	ocamlfind opt $(OCAMLLDFLAGS) -c $(OCAMLCFLAGS) -o $@ $(<:.cmi=.ml)
 
 $(RESULT): $(addsuffix .cmx,$(ALL_NAMES))
-	$(OCAMLOPT_GETOPT) -o $@ $(OCAMLLDFLAGS) $(OCAMLLDLIBS) $^
+	ocamlfind opt -linkpkg $(addprefix -package ,$(RESULTLDLIBS)) -o $@ $^
 
 # module dependencies
 lexer.cmi: lexer.ml
 parser.cmx: parser.cmi lexer.cmx
 parser.mli: parser.ml
 parse.cmx: lexer.cmi parser.cmx
+main.cmx: OCAMLLDLIBS=getopt
 main.cmx: parse.cmx util.cmx simple.cmx shorthand.cmx duplicates.cmx
 util.cmx: OCAMLCFLAGS += -pp cpp
 util.cmx simple.cmx: color_names.cmx
