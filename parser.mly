@@ -245,26 +245,26 @@ simple_selector:
   | id=HASH  { `Id id }
   | addon=cls | addon=attrib | addon=pseudo_class  { addon }
 element_name:
-  | tag=IDENT  { Element (String.lowercase tag) }
+  | tag=IDENT  { Element (String.lowercase_ascii tag) }
   | STAR       { All_elements }
 cls:
   | DOT name=IDENT
   { `Class name }
 attrib:
   | LBRACK S* left=IDENT S* RBRACK
-  { `Attribute (String.lowercase left, None) }
+  { `Attribute (String.lowercase_ascii left, None) }
   | LBRACK S* left=IDENT S* op=RELATION right=rel_value RBRACK
-  { `Attribute (String.lowercase left, Some (op, right)) }
+  { `Attribute (String.lowercase_ascii left, Some (op, right)) }
 %inline rel_value:
   | S* id=IDENT S*  { Ident id }
   | S* s=STRING S*  { Strlit s }
 pseudo_class:
   | COLON id=IDENT
-  { `Pseudo_class (String.lowercase id, None) }
+  { `Pseudo_class (String.lowercase_ascii id, None) }
   | COLON f=FUNCTION args=wslist(COMMA, function_arg) RPAREN
-  { `Pseudo_class (String.lowercase f, Some args) }
+  { `Pseudo_class (String.lowercase_ascii f, Some args) }
   | DOUBLE_COLON id=IDENT
-  { `Pseudo_element (String.lowercase id) }
+  { `Pseudo_element (String.lowercase_ascii id) }
 function_arg:
   | s=simple_selector
   { Nested_selector s }
@@ -287,7 +287,7 @@ function_arg:
 
 declaration:
   | name=property S* COLON S* value=expr important=boption(ig2(IMPORTANT_SYM, S*))
-  { (String.lowercase name, value, important) }
+  { (String.lowercase_ascii name, value, important) }
 %inline property:
   | name=IDENT       { name }
   | STAR name=IDENT  { "*" ^ name }  (* IE7 property name hack *)
@@ -307,14 +307,14 @@ term:
   | op=unary_operator v=numval S*   { unary_number (Unary (op, v)) }
   | v=numval S*                     { v }
   | str=STRING S*                   { Strlit str }
-  | id=IDENT S*                     { Ident (String.lowercase id) }
+  | id=IDENT S*                     { Ident (String.lowercase_ascii id) }
   | ONLY S*                         { Ident "only" }
   | NOT S*                          { Ident "not" }
   | AND S*                          { Ident "and" }
   | FROM S*                         { Ident "from" }
   | TO S*                           { Ident "to" }
   | uri=URI S*                      { Uri uri }
-  | fn=FUNCTION arg=expr RPAREN S*  { Function (String.lowercase fn, arg) }
+  | fn=FUNCTION arg=expr RPAREN S*  { Function (String.lowercase_ascii fn, arg) }
   | key=IDENT S* COLON S* value=term
   { Key_value (key, ":", value) }
   | key=IDENT S* DOT S* value=term
@@ -329,7 +329,7 @@ term:
   {
     let h = "[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" in
     if Str.string_match (Str.regexp ("^" ^ h ^ "\\(" ^ h ^ "\\)?$")) hex 0
-      then Hexcolor (String.lowercase hex)
+      then Hexcolor (String.lowercase_ascii hex)
       else raise (Syntax_error ("invalid color #" ^ hex))
   }
 unary_operator:
@@ -337,5 +337,5 @@ unary_operator:
   | PLUS   { "+" }
 %inline numval:
   | n=NUMBER      { Number (n, None) }
-  | v=UNIT_VALUE  { let n, u = v in Number (n, Some (String.lowercase u)) }
+  | v=UNIT_VALUE  { let n, u = v in Number (n, Some (String.lowercase_ascii u)) }
   | n=PERCENTAGE  { Number (n, Some "%") }

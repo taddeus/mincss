@@ -105,9 +105,9 @@ rule token = parse
   | '@' N A M E S P A C E         { NAMESPACE_SYM }
   | '@' S U P P O R T S           { SUPPORTS_SYM }
   | '@' (('-' ident '-')? as prefix) K E Y F R A M E S
-  { KEYFRAMES_SYM (String.lowercase prefix) }
+  { KEYFRAMES_SYM (String.lowercase_ascii prefix) }
   | '@' (('-' ident '-')? as prefix) V I E W P O R T
-  { VIEWPORT_SYM (String.lowercase prefix) }
+  { VIEWPORT_SYM (String.lowercase_ascii prefix) }
 
   | (s | comment)* s comment* A N D comment* s (s | comment)*
   { advance_pos lexbuf; WS_AND }

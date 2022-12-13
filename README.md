@@ -103,7 +103,7 @@ Dependencies are [OCaml](https://ocaml.org/docs/install.html) 4.02.0,
 
 Bootstrapping on a Debian system can be done as follows:
 
-    $ sudo apt-get install ocaml menhir libgetopt-ocaml-dev git
+    $ sudo apt-get install ocaml menhir ocaml-findlib libgetopt-ocaml-dev git
     $ git clone git@github.com:taddeus/mincss.git
     $ cd mincss
     $ make

@@ -1,10 +1,6 @@
 open Printf
 open Types
 
-(** Operators *)
-
-let (|>) a b = b a
-
 (** List utilities *)
 
 let is_none = function None -> true | Some _ -> false
@@ -23,16 +19,16 @@ let input_all ic =
   let buf = Bytes.create n in
   really_input ic buf 0 n;
   close_in ic;
-  buf
+  Bytes.unsafe_to_string buf
 
 let input_buffered ic chunksize =
   let rec read_all buf bufsize pos =
     match input ic buf pos (bufsize - pos) with
-    | 0 -> (close_in ic; buf)
+    | 0 -> close_in ic; Bytes.unsafe_to_string buf
     | nread when nread = bufsize - pos ->
       let bufsize = bufsize + chunksize in
       let pos = pos + nread in
-      read_all (buf ^ Bytes.create chunksize) bufsize pos
+      read_all (Bytes.cat buf (Bytes.create chunksize)) bufsize pos
     | nread ->
       read_all buf bufsize (pos + nread)
   in
